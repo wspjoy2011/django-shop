@@ -40,13 +40,11 @@ migrate: ## Run Django migrations
 	@echo "Django Database Migrations"
 	@echo "========================================="
 	@echo "Starting database..."
-	docker compose --env-file $(ENV_FILE) up -d db
-	@echo "Waiting for database to be ready (10s)..."
-	@sleep 10
+	@docker compose --env-file $(ENV_FILE) up -d --wait --wait-timeout 60 db
 	@echo "Running Django migrations..."
-	docker compose --env-file $(ENV_FILE) run --rm web migrate-django.sh
+	@docker compose --env-file $(ENV_FILE) run --rm web migrate-django.sh
 	@echo "Stopping database..."
-	docker compose --env-file $(ENV_FILE) stop db
+	@docker compose --env-file $(ENV_FILE) stop db
 	@echo "========================================="
 	@echo "Django migrations completed!"
 	@echo "========================================="
