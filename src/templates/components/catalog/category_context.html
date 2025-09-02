@@ -1,0 +1,73 @@
+{% if master_category or sub_category or article_type %}
+  <section class="category-context mb-4">
+    <!-- Breadcrumb trail -->
+    <nav aria-label="Category path" class="mb-2">
+      <ol class="breadcrumb breadcrumb-soft mb-0">
+        <li class="breadcrumb-item">
+          <a href="{% url 'catalog:product_list' %}" class="text-decoration-none"><i
+                  class="fas fa-layer-group me-1"></i>All products</a>
+        </li>
+        {% if master_category %}
+          <li class="breadcrumb-item">
+            <a href="{{ master_category.get_absolute_url }}"
+               class="text-decoration-none">{{ master_category.name }}</a>
+          </li>
+        {% endif %}
+        {% if sub_category %}
+          <li class="breadcrumb-item">
+            <a href="{{ sub_category.get_absolute_url }}" class="text-decoration-none">{{ sub_category.name }}</a>
+          </li>
+        {% endif %}
+        {% if article_type %}
+          <li class="breadcrumb-item active" aria-current="page">{{ article_type.name }}</li>
+        {% endif %}
+      </ol>
+    </nav>
+
+    <!-- Next-level chips -->
+    {% if master_category and not sub_category %}
+      <div class="context-label mb-2 text-muted small">Sub-categories</div>
+      <div class="chips-wrap">
+        {% for sub in master_category.sub_categories.all %}
+          <a href="{{ sub.get_absolute_url }}" class="chip-link">
+            <i class="fas fa-folder me-1 text-primary"></i>{{ sub.name }}
+          </a>
+        {% empty %}
+          <span class="text-muted small">No sub-categories</span>
+        {% endfor %}
+      </div>
+    {% elif sub_category and not article_type %}
+      <div class="context-label mb-2 text-muted small">
+        Article types in “{{ sub_category.name }}”
+      </div>
+      <div class="chips-wrap">
+        {% for at in sub_category.article_types.all %}
+          <a href="{{ at.get_absolute_url }}" class="chip-link">
+            <i class="fas fa-tag me-1 text-secondary"></i>{{ at.name }}
+          </a>
+        {% empty %}
+          <span class="text-muted small">No article types</span>
+        {% endfor %}
+      </div>
+      <div class="context-siblings mt-2">
+        <span class="text-muted small me-2">Other sub-categories:</span>
+        {% for sib in master_category.sub_categories.all %}
+          {% if sib.id != sub_category.id %}
+            <a href="{{ sib.get_absolute_url }}" class="chip-link chip-link-soft">{{ sib.name }}</a>
+          {% endif %}
+        {% endfor %}
+      </div>
+    {% elif article_type %}
+      <div class="context-siblings">
+        <span class="text-muted small me-2">Other article types in “{{ sub_category.name }}”:</span>
+        {% for sib in sub_category.article_types.all %}
+          {% if sib.id != article_type.id %}
+            <a href="{{ sib.get_absolute_url }}" class="chip-link chip-link-soft">
+              <i class="fas fa-tag me-1"></i>{{ sib.name }}
+            </a>
+          {% endif %}
+        {% endfor %}
+      </div>
+    {% endif %}
+  </section>
+{% endif %}

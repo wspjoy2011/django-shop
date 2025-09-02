@@ -1,0 +1,228 @@
+.favorites-heart-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s ease;
+    padding: 8px;
+    width: 48px;
+    height: 48px;
+    transform-origin: center;
+}
+
+.favorites-heart-container::before {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: -40px;
+    left: 50%;
+    transform: translateX(-50%) scale(0.8);
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15),
+    0 2px 6px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.favorites-heart-container:hover::before {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) scale(1);
+    bottom: -45px;
+}
+
+.favorites-heart-container:hover {
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.3));
+}
+
+.favorites-heart-empty {
+    color: #dee2e6 !important;
+    transition: all 0.3s ease;
+}
+
+.favorites-heart-empty:hover {
+    color: #ff6b6b !important;
+}
+
+.favorites-heart-filled {
+    color: #ff6b6b !important;
+    transition: all 0.3s ease;
+    animation: heartGlow 2s ease-in-out infinite;
+}
+
+.favorites-heart-filled:hover {
+    color: #ff5252 !important;
+}
+
+.favorites-count-bubble {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 700;
+    min-width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.95),
+    0 2px 6px rgba(0, 0, 0, 0.4);
+    animation: bubblePulse 2s ease-in-out infinite;
+    line-height: 1;
+    z-index: 3;
+}
+
+@keyframes heartGlow {
+    0%, 100% {
+        filter: drop-shadow(0 0 5px rgba(255, 107, 107, 0.4));
+    }
+    50% {
+        filter: drop-shadow(0 0 15px rgba(255, 107, 107, 0.8));
+    }
+}
+
+@keyframes bubblePulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.95),
+        0 2px 6px rgba(0, 0, 0, 0.4);
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 2px rgba(255, 255, 255, 1),
+        0 3px 8px rgba(102, 126, 234, 0.5);
+    }
+}
+
+.favorites-heart-container:hover .favorites-count-bubble {
+    background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+    transform: scale(1.1);
+    animation: none;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 1),
+    0 3px 10px rgba(90, 103, 216, 0.6);
+}
+
+.favorites-heart-filled::after {
+    content: '✨';
+    position: absolute;
+    top: -18px;
+    left: -8px;
+    font-size: 0.9rem;
+    pointer-events: none;
+    z-index: 4;
+    opacity: 0;
+    transform: scale(0) rotate(0deg);
+    transition: opacity 0.3s ease;
+}
+
+.favorites-heart-container:hover .favorites-heart-filled::after {
+    opacity: 1;
+    animation: sparkle 0.8s ease-out;
+}
+
+@keyframes sparkle {
+    0% {
+        opacity: 0;
+        transform: scale(0) rotate(0deg);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.3) rotate(180deg);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(0) rotate(360deg);
+    }
+}
+
+@keyframes heartPulse {
+    0% {
+        transform: scale(1);
+    }
+    30% {
+        transform: scale(1.3);
+    }
+    60% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes heartShrink {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(0.9);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+@media (max-width: 768px) {
+    .favorites-heart-container {
+        width: 40px;
+        height: 40px;
+        padding: 6px;
+    }
+
+    .favorites-heart-container .fs-4 {
+        font-size: 1.3rem !important;
+    }
+
+    .favorites-count-bubble {
+        font-size: 0.65rem;
+        min-width: 18px;
+        height: 18px;
+        top: -1px;
+        right: -1px;
+    }
+
+    .favorites-heart-container:hover {
+        transform: scale(1.05);
+    }
+
+    .favorites-heart-container::before {
+        font-size: 0.7rem;
+        padding: 6px 10px;
+        bottom: -35px;
+    }
+
+    .favorites-heart-container:hover::before {
+        bottom: -40px;
+    }
+}
+
+.favorites-count-bubble[data-count="10"],
+.favorites-count-bubble[data-count="20"] {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    animation: celebration 1.5s ease-in-out infinite;
+}
+
+@keyframes celebration {
+    0%, 100% {
+        transform: scale(1) rotate(0deg);
+    }
+    25% {
+        transform: scale(1.08) rotate(3deg);
+    }
+    75% {
+        transform: scale(1.08) rotate(-3deg);
+    }
+}

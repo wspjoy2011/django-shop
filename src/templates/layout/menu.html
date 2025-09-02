@@ -1,0 +1,53 @@
+{% load nav_active %}
+
+{% if nav_categories %}
+  <li class="nav-item dropdown categories-dropdown">
+    <a class="nav-link dropdown-toggle {{ request|is_active:'catalog:product_list_by_master,catalog:product_list_by_sub,catalog:product_list_by_article'|default:'text-light' }}"
+       href="#" id="categoriesDropdown"
+       role="button" data-bs-toggle="dropdown" aria-expanded="false">
+      Categories
+    </a>
+    <ul class="dropdown-menu categories-menu" aria-labelledby="categoriesDropdown">
+      {% for master_category in nav_categories %}
+        <li class="dropdown-submenu">
+          <a class="dropdown-item dropdown-toggle d-flex justify-content-between align-items-center"
+             href="{{ master_category.get_absolute_url }}">
+            <span>{{ master_category.name }}</span>
+            {% if master_category.sub_categories.all %}
+              <i class="fas fa-chevron-right chevron-icon"></i>
+            {% endif %}
+          </a>
+
+          {% if master_category.sub_categories.all %}
+            <ul class="dropdown-menu submenu">
+              {% for sub_category in master_category.sub_categories.all %}
+                <li class="dropdown-submenu">
+                  <a class="dropdown-item dropdown-toggle d-flex justify-content-between align-items-center"
+                     href="{{ sub_category.get_absolute_url }}">
+                    <span>{{ sub_category.name }}</span>
+                    {% if sub_category.article_types.all %}
+                      <i class="fas fa-chevron-right chevron-icon"></i>
+                    {% endif %}
+                  </a>
+
+                  {% if sub_category.article_types.all %}
+                    <ul class="dropdown-menu submenu submenu-level-2">
+                      {% for article_type in sub_category.article_types.all %}
+                        <li>
+                          <a class="dropdown-item" href="{{ article_type.get_absolute_url }}">
+                            <i class="fas fa-tag me-2 text-muted"></i>
+                            {{ article_type.name }}
+                          </a>
+                        </li>
+                      {% endfor %}
+                    </ul>
+                  {% endif %}
+                </li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  </li>
+{% endif %}

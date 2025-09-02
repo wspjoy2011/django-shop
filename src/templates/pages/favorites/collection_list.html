@@ -1,0 +1,99 @@
+{% extends "layout/base.html" %}
+{% load static %}
+
+{% block title %}Favorite Lists{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/pages/favorites-collection-list.css' %}">
+  <link rel="stylesheet" href="{% static 'css/components/collection-create-modal.css' %}">
+{% endblock %}
+
+{% block extra_js %}
+  <script type="module" src="{% static 'js/components/collection-create-modal.js' %}" defer></script>
+{% endblock %}
+
+{% block content %}
+  <div class="container mt-4">
+    <div class="row">
+      <div class="col-12">
+        <!-- Page Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <div>
+            <h1 class="h2 mb-1">Favorite Lists</h1>
+            <p class="text-muted mb-0">
+              {% if total_collections %}
+                Total collections: {{ total_collections }}
+              {% else %}
+                You don't have any favorite collections yet
+              {% endif %}
+            </p>
+          </div>
+          <button type="button" class="btn btn-create-list">
+            <i class="fas fa-plus me-2"></i>Create List
+          </button>
+        </div>
+
+        <!--  Separator -->
+        <div class="header-separator">
+          <div class="separator-line"></div>
+          <div class="separator-content">
+            <div class="separator-icon">
+              <i class="fas fa-heart"></i>
+            </div>
+            <div class="separator-dots">
+              <span class="dot dot-1"></span>
+              <span class="dot dot-2"></span>
+              <span class="dot dot-3"></span>
+            </div>
+          </div>
+          <div class="separator-line"></div>
+        </div>
+      </div>
+
+      {% if has_collections %}
+        <!-- Collections Grid -->
+        <div class="row g-4" id="collections-grid">
+          {% for collection in collections %}
+            {% include 'components/favorites/collection_card.html' with collection=collection %}
+          {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if collections %}
+          <div class="row mt-5">
+            <div class="col-12">
+              {% include 'components/pagination.html' with items=page_obj %}
+            </div>
+          </div>
+        {% endif %}
+
+      {% else %}
+        <!-- Empty State -->
+        <div class="empty-state text-center py-5">
+          <i class="fas fa-heart fa-4x text-muted mb-4"></i>
+          <h3 class="text-muted mb-3">You don't have any favorite lists yet</h3>
+          <p class="text-muted mb-4">Create your first list and add your favorite products</p>
+          <div class="d-flex gap-3 justify-content-center">
+            <a href="{% url 'catalog:product_list' %}" class="btn btn-browse-products">
+              <i class="fas fa-search me-2"></i>Browse Products
+            </a>
+            <button type="button" class="btn btn-create-list">
+              <i class="fas fa-plus me-2"></i>Create List
+            </button>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Include Modal Template -->
+  {% include 'components/favorites/collection_create_modal.html' %}
+
+  <!-- Hidden template for JavaScript (only needed when no collections exist) -->
+  {% if not has_collections %}
+    <script type="text/template" id="collection-card-template">
+      {% include 'components/favorites/collection_card.html' with collection=template_collection %}
+    </script>
+  {% endif %}
+
+{% endblock %}

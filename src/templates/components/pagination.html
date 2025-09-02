@@ -1,0 +1,125 @@
+{% if items.has_other_pages %}
+  <nav aria-label="Page navigation">
+    <ul class="pagination justify-content-center">
+
+      <!-- Previous Page -->
+      {% if items.has_previous %}
+        <li class="page-item">
+          <a class="page-link" href="?page=1{{ filter_query_string }}" aria-label="First">
+            <span aria-hidden="true"><i class="fas fa-angle-double-left"></i></span>
+          </a>
+        </li>
+        <li class="page-item">
+          <a class="page-link" href="?page={{ items.previous_page_number }}{{ filter_query_string }}"
+             aria-label="Previous">
+            <span aria-hidden="true"><i class="fas fa-angle-left"></i></span>
+          </a>
+        </li>
+      {% else %}
+        <li class="page-item disabled">
+          <span class="page-link">
+            <i class="fas fa-angle-double-left"></i>
+          </span>
+        </li>
+        <li class="page-item disabled">
+          <span class="page-link">
+            <i class="fas fa-angle-left"></i>
+          </span>
+        </li>
+      {% endif %}
+
+      <!-- Page Numbers -->
+      {% for num in items.paginator.page_range %}
+        {% if items.number == num %}
+          <li class="page-item active">
+            <span class="page-link">{{ num }}</span>
+          </li>
+        {% elif num > items.number|add:'-3' and num < items.number|add:'3' %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ num }}{{ filter_query_string }}">{{ num }}</a>
+          </li>
+        {% elif num == 1 %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ num }}{{ filter_query_string }}">{{ num }}</a>
+          </li>
+          {% if items.number > 4 %}
+            <li class="page-item disabled">
+              <span class="page-link">...</span>
+            </li>
+          {% endif %}
+        {% elif num == items.paginator.num_pages %}
+          {% if items.number < items.paginator.num_pages|add:'-3' %}
+            <li class="page-item disabled">
+              <span class="page-link">...</span>
+            </li>
+          {% endif %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ num }}{{ filter_query_string }}">{{ num }}</a>
+          </li>
+        {% endif %}
+      {% endfor %}
+
+      <!-- Next Page -->
+      {% if items.has_next %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ items.next_page_number }}{{ filter_query_string }}" aria-label="Next">
+            <span aria-hidden="true"><i class="fas fa-angle-right"></i></span>
+          </a>
+        </li>
+        <li class="page-item">
+          <a class="page-link" href="?page={{ items.paginator.num_pages }}{{ filter_query_string }}" aria-label="Last">
+            <span aria-hidden="true"><i class="fas fa-angle-double-right"></i></span>
+          </a>
+        </li>
+      {% else %}
+        <li class="page-item disabled">
+          <span class="page-link">
+            <i class="fas fa-angle-right"></i>
+          </span>
+        </li>
+        <li class="page-item disabled">
+          <span class="page-link">
+            <i class="fas fa-angle-double-right"></i>
+          </span>
+        </li>
+      {% endif %}
+    </ul>
+
+    <!-- Page Info -->
+    <div class="text-center mt-3">
+      <small class="text-muted">
+        Showing {{ items.start_index }} to {{ items.end_index }} of {{ items.paginator.count }} results
+        | Page {{ items.number }} of {{ items.paginator.num_pages }} total pages
+      </small>
+    </div>
+  </nav>
+
+  <style>
+      .pagination .page-link {
+          border: none;
+          color: #6c757d;
+          padding: 0.5rem 0.75rem;
+          margin: 0 0.125rem;
+          border-radius: 0.375rem;
+          transition: all 0.3s ease;
+      }
+
+      .pagination .page-link:hover {
+          background-color: #e9ecef;
+          color: #495057;
+          transform: translateY(-1px);
+      }
+
+      .pagination .page-item.active .page-link {
+          background-color: #0d6efd;
+          border-color: #0d6efd;
+          color: white;
+          box-shadow: 0 2px 4px rgba(13, 110, 253, 0.25);
+      }
+
+      .pagination .page-item.disabled .page-link {
+          color: #adb5bd;
+          background-color: transparent;
+      }
+  </style>
+{% endif %}

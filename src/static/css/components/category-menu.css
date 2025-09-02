@@ -1,0 +1,249 @@
+/* Multi-level Dropdown Menu Styles */
+.categories-dropdown {
+    position: static !important;
+}
+
+.categories-menu {
+    min-width: 200px;
+    border: none;
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    background: #ffffff;
+    padding: 0.5rem 0;
+    margin-top: 0.5rem;
+}
+
+/* Dropdown submenu positioning */
+.dropdown-submenu {
+    position: relative;
+}
+
+.dropdown-submenu .submenu {
+    position: absolute;
+    top: 0;
+    left: 100%;
+    margin-left: 2px;
+    min-width: 200px;
+    border: none;
+    border-radius: 0.5rem;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+    background: #ffffff;
+    z-index: 1061;
+    white-space: nowrap;
+
+    /* Initially hidden */
+    display: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease;
+}
+
+/* Level 2 submenu (Article Types) */
+.submenu-level-2 {
+    min-width: 180px;
+}
+
+/* Override Bootstrap dropdown behavior */
+.dropdown-submenu .dropdown-toggle::after {
+    display: none;
+}
+
+/* Dropdown items styling */
+.categories-menu .dropdown-item {
+    padding: 0.75rem 1.25rem;
+    color: #2c3e50;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border-radius: 0;
+    position: relative;
+    white-space: nowrap;
+}
+
+.categories-menu .dropdown-item:hover,
+.categories-menu .dropdown-item:focus {
+    background: linear-gradient(90deg, #3498db, #2980b9);
+    color: white;
+    transform: translateX(3px);
+}
+
+/* Master category items (level 0) */
+.categories-menu > li > .dropdown-item {
+    font-weight: 600;
+    font-size: 1rem;
+    color: #2c3e50;
+    border-left: 4px solid transparent;
+}
+
+.categories-menu > li > .dropdown-item:hover,
+.categories-menu > li > .dropdown-item:focus {
+    border-left: 4px solid #3498db;
+    background: linear-gradient(90deg, #ecf0f1, #bdc3c7);
+    color: #2c3e50;
+    transform: translateX(0);
+}
+
+/* Sub category items (level 1) */
+.submenu > li > .dropdown-item {
+    font-weight: 500;
+    font-size: 0.95rem;
+    color: #34495e;
+    padding-left: 1rem;
+    border-left: 3px solid transparent;
+}
+
+.submenu > li > .dropdown-item:hover,
+.submenu > li > .dropdown-item:focus {
+    border-left: 3px solid #e74c3c;
+    background: linear-gradient(90deg, #fdedec, #f5b7b1);
+    color: #c0392b;
+}
+
+/* Article type items (level 2) */
+.submenu-level-2 > li > .dropdown-item {
+    font-weight: 400;
+    font-size: 0.9rem;
+    color: #7f8c8d;
+    padding-left: 0.75rem;
+    border-left: 2px solid transparent;
+}
+
+.submenu-level-2 > li > .dropdown-item:hover,
+.submenu-level-2 > li > .dropdown-item:focus {
+    border-left: 2px solid #f39c12;
+    background: linear-gradient(90deg, #fef9e7, #fcf3cf);
+    color: #d68910;
+}
+
+/* Chevron icons */
+.chevron-icon {
+    font-size: 0.75rem;
+    opacity: 0.7;
+    transition: all 0.3s ease;
+    margin-left: 0.5rem;
+    flex-shrink: 0;
+}
+
+.dropdown-item:hover .chevron-icon {
+    opacity: 1;
+    transform: translateX(2px);
+}
+
+/* Fix z-index issues */
+.categories-dropdown.show {
+    z-index: 1050;
+}
+
+.categories-dropdown.show .dropdown-menu {
+    z-index: 1051;
+}
+
+.dropdown-submenu:hover > .submenu {
+    z-index: 1052;
+}
+
+.submenu-level-2 {
+    z-index: 1053;
+}
+
+/* Responsive Design */
+@media (max-width: 991px) {
+    .dropdown-submenu .submenu {
+        position: static;
+        transform: none;
+        opacity: 1;
+        visibility: visible;
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+        background: #f8f9fa;
+        margin: 0.5rem 0;
+        border-left: 3px solid #3498db;
+        display: none;
+        left: auto;
+        top: auto;
+        min-width: auto;
+        white-space: normal;
+    }
+
+    .dropdown-submenu.active .submenu {
+        display: block;
+    }
+
+    /* Disable hover on mobile */
+    .dropdown-submenu:hover .submenu {
+        display: none;
+    }
+
+    .dropdown-submenu.active:hover .submenu {
+        display: block;
+    }
+
+    .categories-menu {
+        background: #f8f9fa;
+        border-radius: 0;
+        border-top: 3px solid #3498db;
+    }
+
+    .chevron-icon {
+        transform: rotate(0deg);
+        transition: transform 0.3s ease;
+    }
+
+    .dropdown-submenu.active .chevron-icon {
+        transform: rotate(90deg);
+    }
+}
+
+@media (max-width: 767px) {
+    .categories-menu .dropdown-item {
+        padding: 0.6rem 1rem;
+        font-size: 0.9rem;
+    }
+
+    .submenu > li > .dropdown-item {
+        padding-left: 1.5rem;
+        font-size: 0.85rem;
+    }
+
+    .submenu-level-2 > li > .dropdown-item {
+        padding-left: 2rem;
+        font-size: 0.8rem;
+    }
+}
+
+/* Hover effect for main dropdown toggle */
+.categories-dropdown:hover .dropdown-toggle {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 0.375rem;
+}
+
+/* Focus styles for accessibility */
+.categories-menu .dropdown-item:focus {
+    outline: 2px solid #3498db;
+    outline-offset: -2px;
+}
+
+/* Ensure proper spacing between menu levels */
+.dropdown-submenu .dropdown-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.dropdown-submenu .dropdown-item span {
+    flex-grow: 1;
+    white-space: nowrap;
+}
+
+/* Improve visual hierarchy */
+.categories-menu > li > .dropdown-item {
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.submenu > li > .dropdown-item {
+    font-weight: 600;
+}
+
+.submenu-level-2 > li > .dropdown-item {
+    font-weight: 400;
+    font-style: italic;
+}

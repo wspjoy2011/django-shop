@@ -1,0 +1,70 @@
+<div class="rating-component {{ size_class }}{% if user_rated %} rated-active{% endif %}"
+     data-rating-url="{{ rating_url }}"
+     data-rating-delete-url="{{ rating_delete_url }}"
+     data-authenticated="{% if is_authenticated %}true{% else %}false{% endif %}"
+     data-user-rated="{% if user_rated %}true{% else %}false{% endif %}"
+     data-user-score="{{ user_score|default:'' }}"
+     data-product-id="{{ product.pk }}">
+
+  <div class="rating-stars-container" aria-label="Rating: {{ rating_display }} out of 5 stars"
+       title="{% if not is_authenticated %}Login to rate products{% elif user_rated %}Your rating: {{ user_score }}/5{% else %}Click to rate{% endif %}">
+
+    <!-- Interactive rating overlay -->
+    <div class="rating-interactive-overlay">
+      <i class="far fa-star rating-star-input" data-score="1" title="Rate 1"></i>
+      <i class="far fa-star rating-star-input" data-score="2" title="Rate 2"></i>
+      <i class="far fa-star rating-star-input" data-score="3" title="Rate 3"></i>
+      <i class="far fa-star rating-star-input" data-score="4" title="Rate 4"></i>
+      <i class="far fa-star rating-star-input" data-score="5" title="Rate 5"></i>
+
+      <!-- Clear button -->
+      <button type="button" class="btn btn-sm btn-link rating-clear-hover" title="Remove your rating">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <!-- Display-only aggregate stars -->
+    <div class="rating-aggregate">
+      {% for _ in full_stars %}
+        <i class="fas fa-star text-warning rating-star"></i>
+      {% endfor %}
+      {% if has_half_star %}
+        <i class="fas fa-star-half-alt text-warning rating-star"></i>
+      {% endif %}
+      {% for _ in empty_stars %}
+        <i class="far fa-star text-muted rating-star"></i>
+      {% endfor %}
+
+      <!-- User rating indicator -->
+      {% if is_authenticated and user_rated %}
+        <span class="user-rating-indicator" title="Your rating: {{ user_score }}/5">
+          <i class="fas fa-user-check"></i>
+        </span>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if show_text %}
+    <div class="rating-info">
+      <div class="rating-text d-inline-flex align-items-center gap-2">
+        <span class="rating-value">{{ rating_display }}</span>
+        {% if reviews_count > 0 %}
+          <span class="reviews-count">
+            ({{ reviews_count }} review{{ reviews_count|pluralize }})
+          </span>
+        {% endif %}
+      </div>
+
+      <!-- User rating badge  -->
+      {% if is_authenticated and user_rated %}
+        <div class="user-rating-badge-container mt-1">
+          <span class="badge bg-primary user-rating-badge">
+            You: {{ user_score }}/5
+          </span>
+        </div>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <div class="rating-messages-container position-absolute" style="z-index: 9999;"></div>
+</div>

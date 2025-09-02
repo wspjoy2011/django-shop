@@ -31,6 +31,24 @@ logs:  ## Show container logs
 restart:  ## Restart services (down, build, up)
 	make down && make build && make up
 
+clean: ## Clean Docker resources for this project only
+	@echo "========================================="
+	@echo "Docker Project Cleanup"
+	@echo "========================================="
+	@echo "WARNING: This will remove Docker resources for this project only!"
+	@echo "This includes:"
+	@echo "  - Project containers (running and stopped)"
+	@echo "  - Project volumes (DATABASE DATA WILL BE LOST!)"
+	@echo "  - Project networks"
+	@echo "  - Project images"
+	@echo ""
+	@read -p "Are you sure you want to continue? Type 'yes' to confirm: " confirm && [ "$$confirm" = "yes" ]
+	@echo "Stopping and removing all project services..."
+	@docker compose --env-file $(ENV_FILE) down --volumes --remove-orphans --rmi all
+	@echo "========================================="
+	@echo "Project cleanup completed!"
+	@echo "========================================="
+
 # ============================================
 # Migration Commands
 # ============================================
@@ -47,4 +65,36 @@ migrate: ## Run Django migrations
 	@docker compose --env-file $(ENV_FILE) stop db
 	@echo "========================================="
 	@echo "Django migrations completed!"
+	@echo "========================================="
+
+# ============================================
+# Database Seeding Commands
+# ============================================
+
+seed-all: ## Populate database with all test data (users, catalog, inventories, ratings, favorites)
+	@echo "========================================="
+	@echo "Database Full Seeding Process"
+	@echo "========================================="
+	@echo "Starting database..."
+	@docker compose --env-file $(ENV_FILE) up -d --wait --wait-timeout 60 db
+	@echo "Running full database seeding..."
+	@docker compose --env-file $(ENV_FILE) run --rm -e USE_PGBOUNCER=false web seed-all-data.sh
+	@echo "Stopping database..."
+	@docker compose --env-file $(ENV_FILE) stop db
+	@echo "========================================="
+	@echo "Database seeding completed!"
+	@echo "========================================="
+
+clean-all: ## Remove all test data from database (favorites, ratings, inventories, catalog, users)
+	@echo "========================================="
+	@echo "Database Full Cleanup Process"
+	@echo "========================================="
+	@echo "Starting database..."
+	@docker compose --env-file $(ENV_FILE) up -d --wait --wait-timeout 60 db
+	@echo "Running full database cleanup..."
+	@docker compose --env-file $(ENV_FILE) run --rm -e USE_PGBOUNCER=false web clean-all-data.sh
+	@echo "Stopping database..."
+	@docker compose --env-file $(ENV_FILE) stop db
+	@echo "========================================="
+	@echo "Database cleanup completed!"
 	@echo "========================================="

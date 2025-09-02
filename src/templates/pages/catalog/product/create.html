@@ -1,0 +1,148 @@
+{% extends 'layout/base.html' %}
+{% load static %}
+{% load forms_extras %}
+
+{% block title %}Create Product — Django Shop{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/pages/product-create.css' %}">
+{% endblock %}
+
+
+{% block extra_js %}
+  <script src="{% static 'js/pages/product-create-update.js' %}" defer></script>
+{% endblock %}
+
+{% block content %}
+  <div class="row justify-content-center py-4">
+    <div class="col-12 col-lg-10">
+      <div class="card product-form-card shadow-sm">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <h1 class="h4 mb-0">
+            <i class="fas fa-plus-circle me-2 text-primary"></i>Create Product
+          </h1>
+          <a href="{% url 'catalog:product_list' %}" class="btn btn-sm btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Back to catalog
+          </a>
+        </div>
+
+        <div class="card-body">
+          {% non_field_errors form "Form error" %}
+
+          <form method="post" novalidate>
+            {% csrf_token %}
+
+            <div class="row g-3">
+              <!-- Identity -->
+              <div class="col-md-4">
+                <label class="form-label" for="{{ form.product_id.id_for_label }}">{{ form.product_id.label }}</label>
+                {{ form.product_id }}
+                <div class="form-text">{{ form.product_id.help_text }}</div>
+                {% field_errors form.product_id show_icon=True %}
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label" for="{{ form.gender.id_for_label }}">{{ form.gender.label }}</label>
+                {{ form.gender }}
+                <div class="form-text">{{ form.gender.help_text }}</div>
+                {% field_errors form.gender show_icon=True %}
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label" for="{{ form.year.id_for_label }}">{{ form.year.label }}</label>
+                {{ form.year }}
+                <div class="form-text">{{ form.year.help_text }}</div>
+                {% field_errors form.year show_icon=True %}
+              </div>
+
+              <div class="col-12">
+                <label class="form-label"
+                       for="{{ form.product_display_name.id_for_label }}">{{ form.product_display_name.label }}</label>
+                {{ form.product_display_name }}
+                <div class="form-text">{{ form.product_display_name.help_text }}</div>
+                {% field_errors form.product_display_name show_icon=True %}
+              </div>
+
+              <!-- Media -->
+              <div class="col-lg-8">
+                <label class="form-label" for="{{ form.image_url.id_for_label }}">{{ form.image_url.label }}</label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="fas fa-link"></i></span>
+                  {{ form.image_url }}
+                </div>
+                <div class="form-text">{{ form.image_url.help_text }}</div>
+                {% field_errors form.image_url show_icon=True %}
+              </div>
+
+              <div class="col-lg-4">
+                <label class="form-label d-flex align-items-center">
+                  <i class="fas fa-image me-2"></i>Preview
+                </label>
+                <div class="image-preview-wrap">
+                  <img id="imagePreview" src="" alt="Preview" class="img-fluid rounded"/>
+                  <div class="image-preview-placeholder text-muted" id="imagePreviewPlaceholder">
+                    <i class="fas fa-image me-2"></i>No image
+                  </div>
+                </div>
+              </div>
+
+              <div class="soft-sep"></div>
+
+              <!-- Classification -->
+              <div class="col-md-4">
+                <label class="form-label"
+                       for="{{ form.article_type.id_for_label }}">{{ form.article_type.label }}</label>
+                {{ form.article_type }}
+                <div class="form-text">{{ form.article_type.help_text }}</div>
+                {% field_errors form.article_type show_icon=True %}
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label"
+                       for="{{ form.sub_category_display.id_for_label }}">{{ form.sub_category_display.label }}</label>
+                {{ form.sub_category_display }}
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label"
+                       for="{{ form.master_category_display.id_for_label }}">{{ form.master_category_display.label }}</label>
+                {{ form.master_category_display }}
+              </div>
+
+              <!-- Attributes -->
+              <div class="col-md-4">
+                <label class="form-label" for="{{ form.base_colour.id_for_label }}">{{ form.base_colour.label }}</label>
+                {{ form.base_colour }}
+                <div class="form-text">{{ form.base_colour.help_text }}</div>
+                {% field_errors form.base_colour show_icon=True %}
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label" for="{{ form.season.id_for_label }}">{{ form.season.label }}</label>
+                {{ form.season }}
+                <div class="form-text">{{ form.season.help_text }}</div>
+                {% field_errors form.season show_icon=True %}
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label" for="{{ form.usage_type.id_for_label }}">{{ form.usage_type.label }}</label>
+                {{ form.usage_type }}
+                <div class="form-text">{{ form.usage_type.help_text }}</div>
+                {% field_errors form.usage_type show_icon=True %}
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2 mt-4">
+              <a href="{% url 'catalog:product_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-times me-1"></i>Cancel
+              </a>
+              <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save me-1"></i>Save Product
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

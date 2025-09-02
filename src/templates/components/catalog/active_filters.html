@@ -1,0 +1,93 @@
+<div class="active-filters-container mb-3" id="activeFiltersContainer">
+  <div class="active-filters-header d-flex justify-content-between align-items-center"
+       id="activeFiltersHeader">
+    <div class="d-flex align-items-center gap-2">
+      <i class="fas fa-filter text-primary"></i>
+      <span class="fw-medium">Active Filters</span>
+      <span class="badge bg-primary rounded-pill" id="activeFiltersCount">0</span>
+    </div>
+    <div class="d-flex gap-2">
+      <button type="button" class="btn btn-sm btn-outline-danger"
+              id="clearAllFilters" style="display: none;">
+        <i class="fas fa-times-circle me-1"></i>Clear All
+      </button>
+      <button type="button" class="btn btn-sm btn-link text-muted p-0"
+              id="toggleActiveFilters">
+        <i class="fas fa-chevron-up"></i>
+      </button>
+    </div>
+  </div>
+
+  <div class="active-filters-content mt-3" id="activeFiltersContent">
+    <!-- Gender Filters -->
+    <div class="filter-group" id="genderFiltersGroup" style="display: none;">
+      <div class="filter-group-header">
+        <span class="filter-group-title">
+          <i class="fas fa-venus-mars me-1"></i>Gender
+        </span>
+        <button type="button" class="btn btn-sm btn-link text-danger p-0"
+                data-clear-group="gender">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="filter-tags" id="genderFilterTags"></div>
+    </div>
+
+    <!-- Season Filters -->
+    <div class="filter-group" id="seasonFiltersGroup" style="display: none;">
+      <div class="filter-group-header">
+        <span class="filter-group-title">
+          <i class="fas fa-sun me-1"></i>Season
+        </span>
+        <button type="button" class="btn btn-sm btn-link text-danger p-0"
+                data-clear-group="season">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="filter-tags" id="seasonFilterTags"></div>
+    </div>
+
+    <!-- Availability Filters -->
+    <div class="filter-group" id="availabilityFiltersGroup" style="display: none;">
+      <div class="filter-group-header">
+        <span class="filter-group-title">
+          <i class="fas fa-box me-1"></i>Availability
+        </span>
+        <button type="button" class="btn btn-sm btn-link text-danger p-0"
+                data-clear-group="availability">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="filter-tags" id="availabilityFilterTags"></div>
+    </div>
+
+    <!-- Discount Filters -->
+    <div class="filter-group" id="discountFiltersGroup" style="display: none;">
+      <div class="filter-group-header">
+        <span class="filter-group-title">
+          <i class="fas fa-percentage me-1"></i>Discount
+        </span>
+        <button type="button" class="btn btn-sm btn-link text-danger p-0"
+                data-clear-group="discount">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="filter-tags" id="discountFilterTags"></div>
+    </div>
+
+    <!-- Price Filters -->
+    <div class="filter-group" id="priceFiltersGroup" style="display: none;">
+      <div class="filter-group-header">
+        <span class="filter-group-title">
+          <i class="fas fa-dollar-sign me-1"></i>Price
+        </span>
+        <button type="button" class="btn btn-sm btn-link text-danger p-0"
+                data-clear-group="price">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="filter-tags" id="priceFilterTags"></div>
+    </div>
+
+  </div>
+</div>

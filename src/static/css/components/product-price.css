@@ -1,0 +1,199 @@
+/* Base Product Price Styles */
+.product-price {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-weight: 500;
+}
+
+.product-price .price-value {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.025em;
+}
+
+/* Size Variants */
+.product-price-small {
+  font-size: 0.875rem;
+}
+
+.product-price-small .price-value {
+  font-size: 0.875rem;
+}
+
+.product-price-small .discount-badge {
+  font-size: 0.75rem;
+  padding: 0.125rem 0.375rem;
+}
+
+.product-price-normal {
+  font-size: 1rem;
+}
+
+.product-price-normal .price-value {
+  font-size: 1rem;
+}
+
+.product-price-normal .discount-badge {
+  font-size: 0.875rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.product-price-large {
+  font-size: 1.25rem;
+}
+
+.product-price-large .price-value {
+  font-size: 1.25rem;
+}
+
+.product-price-large .discount-badge {
+  font-size: 1rem;
+  padding: 0.375rem 0.75rem;
+}
+
+.product-price-xl {
+  font-size: 1.5rem;
+}
+
+.product-price-xl .price-value {
+  font-size: 1.5rem;
+}
+
+.product-price-xl .discount-badge {
+  font-size: 1.125rem;
+  padding: 0.5rem 1rem;
+}
+
+/* Sale Price Layout */
+.price-on-sale {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Sale Price */
+.sale-price {
+  color: #dc3545;
+  font-weight: 700;
+}
+
+.product-price-large .sale-price,
+.product-price-xl .sale-price {
+  font-weight: 800;
+}
+
+/* Original Price (Crossed Out) */
+.original-price {
+  color: #6c757d;
+  text-decoration: line-through;
+  font-weight: 400;
+  opacity: 0.8;
+}
+
+/* Regular Price */
+.current-price {
+  color: #212529;
+  font-weight: 600;
+}
+
+.product-price-large .current-price,
+.product-price-xl .current-price {
+  font-weight: 700;
+}
+
+/* Fallback Price */
+.fallback-price {
+  color: #495057;
+  font-weight: 600;
+}
+
+/* Discount Badge */
+.discount-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: linear-gradient(135deg, #dc3545, #b02a37);
+  color: white;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
+  transition: all 0.2s ease;
+}
+
+.discount-badge:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+}
+
+.discount-icon {
+  font-size: 0.75em;
+  opacity: 0.9;
+}
+
+/* No Price Available */
+.price-unavailable {
+  color: #6c757d;
+  font-style: italic;
+}
+
+.no-price-text {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.875em;
+}
+
+.no-price-text i {
+  opacity: 0.7;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 576px) {
+  .price-on-sale {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+
+  .product-price-large {
+    font-size: 1.125rem;
+  }
+
+  .product-price-xl {
+    font-size: 1.25rem;
+  }
+}
+
+/* Animation for Price Changes */
+.product-price .price-value {
+  transition: color 0.2s ease, font-size 0.2s ease;
+}
+
+.product-price:hover .sale-price {
+  color: #b02a37;
+}
+
+.product-price:hover .discount-badge {
+  background: linear-gradient(135deg, #b02a37, #9c2633);
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .current-price {
+    color: #f8f9fa;
+  }
+
+  .fallback-price {
+    color: #e9ecef;
+  }
+
+  .original-price {
+    color: #adb5bd;
+  }
+
+  .price-unavailable {
+    color: #adb5bd;
+  }
+}

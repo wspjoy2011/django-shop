@@ -1,0 +1,90 @@
+/* Container accents */
+.product-detail .detail-header {
+    background: linear-gradient(135deg, #0d6efd0a, #6f42c10a);
+    border: 1px solid rgba(13, 110, 253, .08);
+    border-radius: 16px;
+}
+
+.product-detail .detail-card {
+    border: 1px solid rgba(0, 0, 0, .06);
+    border-radius: 16px;
+    background: #fff;
+}
+
+.product-detail .more-box {
+    border: 1px dashed rgba(0, 0, 0, .12);
+    border-radius: 16px;
+    background: linear-gradient(180deg, #ffffff, #fafbff);
+}
+
+/* Image */
+.product-detail .detail-image {
+    border: 1px solid rgba(0, 0, 0, .06);
+    border-radius: 16px;
+    overflow: hidden;
+    background: linear-gradient(120deg, #f8fafc, #f3f6ff);
+}
+
+.product-detail .detail-image .no-image {
+    padding: 80px 0;
+    text-align: center;
+    color: #94a3b8;
+}
+
+/* Badges */
+.badge-soft {
+    background: rgba(13, 110, 253, .08);
+    color: #0d6efd;
+    border-radius: 999px;
+    font-weight: 600;
+}
+
+.badge-soft-secondary {
+    background: rgba(108, 117, 125, .1);
+    color: #6c757d;
+    border-radius: 999px;
+    font-weight: 600;
+}
+
+.badge-soft-warning {
+    background: rgba(255, 193, 7, .12);
+    color: #b48300;
+    border-radius: 999px;
+    font-weight: 600;
+}
+
+.badge-soft-success {
+    background: rgba(25, 135, 84, .12);
+    color: #217f5a;
+    border-radius: 999px;
+    font-weight: 600;
+}
+
+.badge-soft-dark {
+    background: rgba(33, 37, 41, .08);
+    color: #212529;
+    border-radius: 999px;
+    font-weight: 600;
+}
+
+/* Separators & meta */
+.soft-sep {
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(0, 0, 0, .06), transparent);
+    margin: 12px 0 16px;
+}
+
+.detail-meta i {
+    width: 1.1rem;
+    text-align: center;
+    color: #6c757d;
+}
+
+/* Buttons */
+.product-detail .btn {
+    border-radius: 10px;
+}
+
+.product-detail .btn-primary.btn-lg {
+    box-shadow: 0 8px 24px rgba(13, 110, 253, .18);
+}

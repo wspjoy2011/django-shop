@@ -1,0 +1,15 @@
+.search-input-dark::placeholder {
+    color: rgba(255, 255, 255, .85);
+}
+
+.search-input-dark {
+  border: 1px solid rgba(255,255,255,.85) !important;
+  color: #fff;
+  box-shadow: none;
+}
+
+.search-input-dark:focus {
+  border-color: #fff !important;
+  outline: none;
+  box-shadow: 0 0 0 .2rem rgba(255,255,255,.15);
+}

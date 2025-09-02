@@ -1,0 +1,225 @@
+{% extends 'layout/base.html' %}
+{% load static %}
+{% load rating_tags %}
+{% load product_price %}
+{% load favorite_tags %}
+
+{% block title %}Catalog — Products{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/pages/catalog-product-list.css' %}">
+  <link rel="stylesheet" href="{% static 'css/components/filter-sidebar.css' %}">
+  <link rel="stylesheet" href="{% static 'css/components/active-filters.css' %}">
+  <link rel="stylesheet" href="{% static 'css/components/likes-dislikes.css' %}">
+  <link rel="stylesheet" href="{% static 'css/components/ratings.css' %}">
+  <link rel="stylesheet" href="{% static 'css/components/product-price.css' %}">
+  <link rel="stylesheet" href="{% static 'css/components/favorite-button.css' %}">
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{% static 'js/components/sort-select.js' %}" defer></script>
+  <script src="{% static 'js/components/per-page-select.js' %}" defer></script>
+  <script src="{% static 'js/components/filter-sidebar.js' %}" defer></script>
+  <script src="{% static 'js/components/active-filters.js' %}" defer></script>
+  <script type="module" src="{% static 'js/components/likes-dislike.js' %}" defer></script>
+  <script type="module" src="{% static 'js/components/rating-stars.js' %}" defer></script>
+  <script type="module" src="{% static 'js/components/favorite-button.js' %}" defer></script>
+{% endblock %}
+
+{% block content %}
+  <div class="py-4">
+    <!-- Header -->
+    <div class="catalog-hero p-4 p-lg-5 mb-4">
+      <div class="d-lg-flex align-items-center justify-content-between">
+        <div class="text-start">
+          <h1 class="h2 fw-bold mb-2">
+            <i class="fas fa-shirt text-primary me-2"></i> Product Catalog
+          </h1>
+          <p class="text-muted mb-0">
+            Explore apparel, footwear, and accessories across genders, seasons, and usage types.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Include Sidebar & Overlay -->
+    {% include 'components/catalog/filter_sidebar.html' %}
+
+    <!-- Categories -->
+    {% include 'components/catalog/category_context.html' %}
+
+    <!-- Active Filters -->
+    {% include 'components/catalog/active_filters.html' %}
+
+    <!-- Results count and Filters button -->
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+      <div class="text-muted small">
+        <i class="fas fa-database me-1"></i>
+        {{ page_obj.paginator.count }} results
+        {% if page_obj.paginator.count %}
+          <span class="ms-2">| Showing {{ page_obj.start_index }}–{{ page_obj.end_index }}</span>
+        {% endif %}
+      </div>
+      <div>
+        <button type="button" class="btn btn-primary btn-sm d-inline-flex align-items-center rounded-pill shadow-sm"
+                id="filterButton">
+          <i class="fas fa-sliders fa-lg me-2"></i>
+          Filters
+        </button>
+      </div>
+    </div>
+
+    <!-- Sort Per-page selects -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+      <div class="flex-grow-1">
+        {% include 'components/catalog/sort_select.html' %}
+      </div>
+      <div class="ms-auto text-end">
+        {% include 'components/catalog/per_page_select.html' %}
+      </div>
+    </div>
+
+    <!-- Products Grid -->
+    {% if products %}
+      <div class="row g-4">
+        {% for product in products %}
+
+          <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
+            <div class="product-card h-100 position-relative">
+
+              <!-- Image -->
+              <div class="product-image position-relative">
+                {% if product.image_url %}
+                  <a href="{{ product.get_absolute_url }}" class="product-image-link"
+                     aria-label="{{ product.product_display_name }}">
+                    <img src="{{ product.image_url }}" alt="{{ product.product_display_name }}">
+                  </a>
+                {% else %}
+                  <a href="{{ product.get_absolute_url }}" class="product-image-link text-decoration-none">
+                    <div class="no-image">No image available</div>
+                  </a>
+                {% endif %}
+
+                {% with stock=product.get_stock_status %}
+                  {% if stock.is_active %}
+                    {% if stock.in_stock %}
+                      {% if stock.quantity < 10 %}
+                        <span class="badge bg-warning text-dark position-absolute top-0 end-0 m-2 shadow-sm">
+                          {{ stock.quantity }} in stock
+                        </span>
+                      {% else %}
+                        <span class="badge bg-success position-absolute top-0 end-0 m-2 shadow-sm">
+                          {{ stock.quantity }} in stock
+                        </span>
+                      {% endif %}
+                    {% else %}
+                      <span class="badge bg-danger position-absolute top-0 end-0 m-2 shadow-sm">
+                        Out of stock
+                      </span>
+                    {% endif %}
+                  {% endif %}
+                {% endwith %}
+
+              </div>
+
+              <!-- Body -->
+              <div class="product-body">
+                <h3 class="product-title text-truncate" title="{{ product.product_display_name }}">
+                  {{ product.product_display_name }}
+                </h3>
+                <div class="product-meta mb-2">
+                  ID: {{ product.product_id }}{% if product.year %} • {{ product.year }}{% endif %}
+                </div>
+
+                <div class="soft-sep"></div>
+
+                <!-- Price -->
+                <div class="mt-3 mb-3">
+                  {% product_price product %}
+                </div>
+
+                <!-- Badges -->
+                <div class="d-flex flex-wrap gap-2">
+                  {% if product.gender %}
+                    <span class="badge badge-soft">{{ product.gender }}</span>
+                  {% endif %}
+                  {% if product.article_type %}
+                    <span class="badge badge-soft-dark">
+                      <i class="fas fa-tag me-1"></i>{{ product.article_type.name }}
+                    </span>
+                  {% endif %}
+                  {% if product.base_colour %}
+                    <span class="badge badge-soft-secondary">
+                      <i class="fas fa-palette me-1"></i>{{ product.base_colour.name }}
+                    </span>
+                  {% endif %}
+                  {% if product.season %}
+                    <span class="badge badge-soft-warning">
+                      <i class="fas fa-sun me-1"></i>{{ product.season.name }}
+                    </span>
+                  {% endif %}
+                  {% if product.usage_type %}
+                    <span class="badge badge-soft-success">
+                      <i class="fas fa-person-running me-1"></i>{{ product.usage_type.name }}
+                    </span>
+                  {% endif %}
+                </div>
+              </div>
+
+              <!-- Favorites -->
+              <div class="d-flex justify-content-end mb-2 me-5">
+                {% favorite_button product size='small' show_count=True %}
+              </div>
+
+              <!-- Rating and Likes/Dislikes -->
+              {% with rating_stats=product.get_rating_stats %}
+                <div class="mt-2 mb-1 d-flex flex-column align-items-center text-center gap-2">
+                  <div>
+                    {% rating_stars rating_stats.avg_rating rating_stats.ratings_count product %}
+                  </div>
+                  <div>
+                    {% likes_dislikes product.get_likes_count product.get_dislikes_count product %}
+                  </div>
+                </div>
+              {% endwith %}
+
+              {% with stock=product.get_stock_status %}
+                {% if not stock.is_active or not stock.in_stock %}
+                  <div class="position-absolute top-0 start-0 w-100 h-100 rounded-3 catalog-list-overlay"
+                       aria-hidden="true"
+                       title="Unavailable">
+
+                    <div class="position-absolute top-50 start-50 translate-middle px-3 py-2 rounded-pill shadow catalog-list-overlay-label">
+                      {% if not stock.is_active %}
+                        Not Active
+                      {% else %}
+                        Out of Stock
+                      {% endif %}
+                    </div>
+
+                  </div>
+                {% endif %}
+              {% endwith %}
+
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="text-center text-muted py-5">
+        <i class="fas a-box-open fa-2x mb-3"></i>
+        <p class="mb-0">No products were found.</p>
+      </div>
+    {% endif %}
+
+    <!-- Pagination -->
+    {% if products %}
+      <div class="row mt-5">
+        <div class="col-12">
+          {% include 'components/pagination.html' with items=page_obj filter_query_string=filter_query_string %}
+        </div>
+      </div>
+    {% endif %}
+
+  </div>
+{% endblock %}

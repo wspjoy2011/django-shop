@@ -1,0 +1,296 @@
+/* Rating Component Base Styles */
+.rating-component {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 8px;
+    position: relative;
+}
+
+.rating-stars-container {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.rating-star {
+    transition: all 0.2s ease;
+}
+
+.rating-star.text-warning {
+    color: #ffc107 !important;
+    filter: drop-shadow(0 1px 1px rgba(255, 193, 7, 0.2));
+}
+
+.rating-star.text-muted {
+    color: #dee2e6 !important;
+}
+
+.rating-aggregate {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    transition: opacity 0.3s ease;
+}
+
+.rating-info {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;;
+}
+
+.rating-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+.rating-value {
+    font-weight: 500;
+    color: #495057;
+}
+
+.reviews-count {
+    color: #6c757d;
+    font-size: 0.8rem;
+}
+
+/* User rating badge container and styling */
+.user-rating-badge-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+
+.user-rating-badge {
+    font-size: 0.7rem !important;
+    font-weight: 500 !important;
+    padding: 3px 8px !important;
+    line-height: 1.2 !important;
+}
+
+/* User rating indicator */
+.user-rating-indicator {
+    margin-left: 6px;
+    color: #28a745;
+    font-size: 0.75rem;
+    opacity: 0.8;
+}
+
+/* Interactive overlay */
+.rating-interactive-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    z-index: 2;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(4px);
+    border-radius: 6px;
+    padding: 2px 4px;
+    border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+/* Show interactive overlay on hover for authenticated users */
+.rating-component[data-authenticated="true"]:hover .rating-interactive-overlay {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Fade out aggregate stars when showing interactive overlay */
+.rating-component[data-authenticated="true"]:hover .rating-aggregate {
+    opacity: 0.3;
+}
+
+/* Interactive stars styling */
+.rating-star-input {
+    color: #adb5bd;
+    cursor: pointer;
+    transition: transform .15s ease, color .15s ease;
+    font-size: 1rem;
+}
+
+.rating-star-input:hover {
+    transform: scale(1.15);
+}
+
+.rating-star-input.active {
+    color: #ffc107;
+    text-shadow: 0 0 4px rgba(255, 193, 7, 0.4);
+}
+
+/* Clear button in overlay */
+.rating-clear-hover {
+    padding: 2px 6px;
+    font-size: 0.7rem;
+    color: #dc3545;
+    margin-left: 6px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    border: none !important;
+    background: none !important;
+}
+
+/* Show clear button only for users who have rated */
+.rating-component[data-user-rated="true"]:hover .rating-clear-hover {
+    opacity: 1;
+}
+
+.rating-clear-hover:hover {
+    color: #c82333 !important;
+    transform: scale(1.1);
+}
+
+/* Enhanced active state for rated products */
+.rating-component.rated-active .rating-aggregate {
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.1), rgba(255, 193, 7, 0.05));
+    border-radius: 6px;
+    padding: 2px 6px;
+    border: 1px solid rgba(255, 193, 7, 0.2);
+}
+
+.rating-component.rated-active .rating-value {
+    font-weight: 600;
+    color: #ffc107;
+}
+
+/* Size Variations */
+.rating-stars-small .rating-star,
+.rating-stars-small .rating-star-input {
+    font-size: 0.75rem;
+}
+
+.rating-stars-small .rating-text {
+    font-size: 0.75rem;
+}
+
+.rating-stars-small .user-rating-badge {
+    font-size: 0.65rem !important;
+    padding: 2px 6px !important;
+}
+
+.rating-stars-normal .rating-star,
+.rating-stars-normal .rating-star-input {
+    font-size: 0.875rem;
+}
+
+.rating-stars-large .rating-star,
+.rating-stars-large .rating-star-input {
+    font-size: 1.1rem;
+}
+
+.rating-stars-large .rating-text {
+    font-size: 1rem;
+}
+
+.rating-stars-large .user-rating-badge {
+    font-size: 0.8rem !important;
+    padding: 4px 10px !important;
+}
+
+/* Hover effects for product cards */
+.product-card:hover .rating-star {
+    transform: scale(1.05);
+}
+
+/* Messages styling */
+.rating-messages-container {
+    top: -44px;
+    left: 50%;
+    transform: translateX(-50%);
+    min-width: 140px;
+    max-width: 220px;
+    pointer-events: none;
+}
+
+.rating-messages-container > div {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .12);
+    border-radius: 6px;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+    padding: 6px 10px;
+    margin-bottom: 4px;
+    transition: all .2s ease;
+    pointer-events: auto;
+    font-size: .75rem;
+}
+
+.rating-messages-container .bg-success {
+    background: linear-gradient(135deg, #198754, #20c997) !important;
+    color: #fff;
+}
+
+.rating-messages-container .bg-danger {
+    background: linear-gradient(135deg, #dc3545, #e74c3c) !important;
+    color: #fff;
+}
+
+.rating-messages-container .bg-info {
+    background: linear-gradient(135deg, #17a2b8, #3498db) !important;
+    color: #fff;
+}
+
+.rating-messages-container .bg-warning {
+    background: linear-gradient(135deg, #ffc107, #f39c12) !important;
+    color: #333;
+    border-color: rgba(0, 0, 0, .08);
+}
+
+/* Mobile responsiveness */
+@media (max-width: 576px) {
+    .rating-messages-container {
+        min-width: 120px;
+        max-width: 180px;
+    }
+
+    .rating-messages-container > div {
+        padding: 4px 8px;
+    }
+
+    .rating-interactive-overlay {
+        padding: 1px 3px;
+    }
+
+    .rating-star-input {
+        font-size: 0.9rem;
+    }
+
+    .user-rating-badge {
+        font-size: 0.65rem !important;
+        padding: 2px 6px !important;
+    }
+}
+
+/* Animation keyframes */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeOutUp {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+}

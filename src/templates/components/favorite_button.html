@@ -1,0 +1,31 @@
+<div class="favorite-component {{ size_class }}{% if in_favorites %} favorited-active{% endif %}"
+     data-favorite-url="{{ favorite_toggle_url }}"
+     data-authenticated="{% if is_authenticated %}true{% else %}false{% endif %}"
+     data-in-favorites="{% if in_favorites %}true{% else %}false{% endif %}"
+     data-product-id="{{ product.pk }}">
+
+  <div class="favorite-container d-inline-flex align-items-center gap-2"
+       title="{% if not is_authenticated %}Login to add to favorites{% elif in_favorites %}Remove from favorites{% else %}Add to favorites{% endif %}">
+
+    <button type="button" class="btn favorite-btn"
+            title="{% if in_favorites %}Remove from favorites{% else %}Add to favorites{% endif %}">
+
+      <div class="favorite-bookmark">
+        <div class="bookmark-body">
+          <i class="fas fa-star favorite-star"></i>
+        </div>
+        <div class="bookmark-fold"></div>
+      </div>
+    </button>
+
+    {% if show_count %}
+      <div class="favorite-count-container">
+        <span class="favorite-count">{{ favorites_count }}</span>
+        <small class="favorite-label">saved</small>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Messages container -->
+  <div class="favorite-messages-container position-absolute" style="z-index: 9999;"></div>
+</div>

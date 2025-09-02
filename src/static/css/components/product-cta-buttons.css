@@ -1,0 +1,319 @@
+/* Product CTA Buttons */
+.product-cta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.product-cta .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 24px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    letter-spacing: 0.3px;
+    border-radius: 10px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    text-decoration: none;
+    border: 2px solid transparent;
+    min-height: 48px;
+    white-space: nowrap;
+}
+
+.product-cta .btn i {
+    margin-right: 8px;
+    font-size: 1.1em;
+    transition: transform 0.3s ease;
+}
+
+.product-cta .btn:hover i {
+    transform: scale(1.1);
+}
+
+/* Primary Button - Add to Cart */
+.product-cta .btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3),
+    0 2px 8px rgba(0, 0, 0, 0.1);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.product-cta .btn-primary::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.6s ease;
+}
+
+.product-cta .btn-primary:hover::before {
+    left: 100%;
+}
+
+.product-cta .btn-primary:hover {
+    background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4),
+    0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+.product-cta .btn-primary:active {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3),
+    0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Large Primary Button */
+.product-cta .btn-lg {
+    padding: 16px 32px;
+    font-size: 1rem;
+    min-height: 56px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+/* Secondary Button - Wishlist */
+.product-cta .btn-outline-secondary {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    color: #6c757d;
+    border-color: #dee2e6;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.product-cta .btn-outline-secondary:hover {
+    background: linear-gradient(135deg, #e91e63 0%, #ad1457 100%);
+    color: white;
+    border-color: #e91e63;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(233, 30, 99, 0.3),
+    0 3px 10px rgba(0, 0, 0, 0.1);
+}
+
+.product-cta .btn-outline-secondary:hover i {
+    transform: scale(1.2) rotate(5deg);
+    color: #ffcdd2;
+}
+
+.product-cta .btn-outline-secondary:active {
+    transform: translateY(-1px);
+}
+
+/* Link Button - Back to Catalog */
+.product-cta .btn-link {
+    background: transparent;
+    color: #6c757d;
+    border: none;
+    padding: 12px 20px;
+    font-weight: 500;
+    text-decoration: none;
+    position: relative;
+}
+
+.product-cta .btn-link::after {
+    content: '';
+    position: absolute;
+    bottom: 8px;
+    left: 20px;
+    right: 20px;
+    height: 2px;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
+}
+
+.product-cta .btn-link:hover {
+    color: #495057;
+    text-decoration: none;
+    transform: translateX(-3px);
+}
+
+.product-cta .btn-link:hover::after {
+    transform: scaleX(1);
+}
+
+.product-cta .btn-link:hover i {
+    transform: translateX(-3px);
+}
+
+/* Button Focus States */
+.product-cta .btn:focus {
+    outline: 3px solid rgba(102, 126, 234, 0.5);
+    outline-offset: 2px;
+}
+
+.product-cta .btn-outline-secondary:focus {
+    outline-color: rgba(233, 30, 99, 0.5);
+}
+
+/* Loading State */
+.product-cta .btn.loading {
+    pointer-events: none;
+    opacity: 0.8;
+}
+
+.product-cta .btn.loading i {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .product-cta {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+
+    .product-cta .btn {
+        width: 100%;
+        justify-content: center;
+        padding: 14px 20px;
+        min-height: 50px;
+    }
+
+    .product-cta .btn-lg {
+        padding: 18px 24px;
+        min-height: 58px;
+        font-size: 1.05rem;
+    }
+
+    .product-cta .btn-link {
+        order: 3;
+        text-align: center;
+        margin-top: 8px;
+    }
+}
+
+@media (max-width: 576px) {
+    .product-cta .btn {
+        font-size: 0.9rem;
+        padding: 12px 18px;
+        min-height: 46px;
+    }
+
+    .product-cta .btn-lg {
+        padding: 16px 22px;
+        min-height: 54px;
+        font-size: 1rem;
+    }
+}
+
+/* Button Animations */
+@keyframes buttonPulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.product-cta .btn-primary:hover {
+    animation: buttonPulse 2s infinite;
+}
+
+/* Success State */
+.product-cta .btn.success {
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    color: white;
+}
+
+.product-cta .btn.success i::before {
+    content: "\f00c";
+}
+
+/* Disabled State */
+.product-cta .btn:disabled,
+.product-cta .btn.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.product-cta .btn:disabled:hover,
+.product-cta .btn.disabled:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    .product-cta .btn-outline-secondary {
+        background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+        color: #e2e8f0;
+        border-color: #4a5568;
+    }
+
+    .product-cta .btn-outline-secondary:hover {
+        background: linear-gradient(135deg, #e91e63 0%, #ad1457 100%);
+        color: white;
+        border-color: #e91e63;
+    }
+
+    .product-cta .btn-link {
+        color: #a0aec0;
+    }
+
+    .product-cta .btn-link:hover {
+        color: #e2e8f0;
+    }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: more) {
+    .product-cta .btn {
+        border-width: 3px;
+    }
+
+    .product-cta .btn-primary {
+        background: #000;
+        color: #fff;
+        border-color: #fff;
+    }
+
+    .product-cta .btn-outline-secondary {
+        background: #fff;
+        color: #000;
+        border-color: #000;
+    }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+    .product-cta .btn {
+        transition: none;
+    }
+
+    .product-cta .btn i {
+        transition: none;
+    }
+
+    .product-cta .btn:hover {
+        animation: none;
+        transform: none;
+    }
+}

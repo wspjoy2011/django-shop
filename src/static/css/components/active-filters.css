@@ -1,0 +1,155 @@
+.active-filters-container {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: 1px solid #dee2e6;
+    border-radius: 12px;
+    padding: 1rem;
+    transition: all 0.3s ease;
+}
+
+.active-filters-container.collapsed .active-filters-content {
+    display: none !important;
+}
+
+.active-filters-header {
+    cursor: pointer;
+    user-select: none;
+}
+
+.active-filters-header:hover {
+    opacity: 0.8;
+}
+
+.active-filters-content {
+    transition: all 0.3s ease;
+}
+
+.filter-group {
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 8px;
+    border-left: 4px solid #0d6efd;
+}
+
+.filter-group:last-child {
+    margin-bottom: 0;
+}
+
+.filter-group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.filter-group-title {
+    font-weight: 600;
+    color: #495057;
+    font-size: 0.875rem;
+}
+
+.filter-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.filter-tag {
+    display: inline-flex;
+    align-items: center;
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 20px;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.8rem;
+    color: #495057;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.filter-tag:hover {
+    background: #f8f9fa;
+    border-color: #adb5bd;
+    color: #495057;
+    text-decoration: none;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.filter-tag .remove-icon {
+    margin-left: 0.5rem;
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
+}
+
+.filter-tag:hover .remove-icon {
+    opacity: 1;
+    color: #dc3545;
+}
+
+/* Gender */
+.filter-group[id="genderFiltersGroup"] {
+    border-left-color: #e83e8c;
+}
+
+.filter-group[id="genderFiltersGroup"] .filter-tag {
+    border-color: #e83e8c;
+    color: #e83e8c;
+}
+
+/* Season specific styling */
+.filter-group[id="seasonFiltersGroup"] {
+    border-left-color: #fd7e14;
+}
+
+.filter-group[id="seasonFiltersGroup"] .filter-tag {
+    border-color: #fd7e14;
+    color: #fd7e14;
+}
+
+/* Availability */
+.filter-group[id="availabilityFiltersGroup"] {
+    border-left-color: #20c997;
+}
+
+.filter-group[id="availabilityFiltersGroup"] .filter-tag {
+    border-color: #20c997;
+    color: #20c997;
+}
+
+/* Discount */
+.filter-group[id="discountFiltersGroup"] {
+    border-left-color: #6f42c1;
+}
+
+.filter-group[id="discountFiltersGroup"] .filter-tag {
+    border-color: #6f42c1;
+    color: #6f42c1;
+}
+
+/* Price */
+.filter-group[id="priceFiltersGroup"] {
+    border-left-color: #2854a7;
+}
+
+.filter-group[id="priceFiltersGroup"] .filter-tag {
+    border-color: #2854a7;
+    color: #4367a8;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .active-filters-container {
+        padding: 0.75rem;
+    }
+
+    .filter-group {
+        padding: 0.5rem;
+    }
+
+    .filter-tag {
+        font-size: 0.75rem;
+        padding: 0.2rem 0.6rem;
+    }
+}

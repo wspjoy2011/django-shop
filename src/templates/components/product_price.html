@@ -1,0 +1,43 @@
+<div class="product-price {{ size_class }}">
+  {% if has_inventory %}
+    {% if is_on_sale %}
+      <!-- Sale Price Display -->
+      <div class="price-on-sale">
+        <span class="sale-price">
+          <span class="price-value">{{ sale_price }}</span>
+        </span>
+        <span class="original-price">
+          <span class="price-value">{{ base_price }}</span>
+        </span>
+        <span class="discount-badge">
+          <i class="fas fa-percentage discount-icon"></i>
+          <span class="discount-value">{{ discount_percentage }}%</span>
+        </span>
+      </div>
+    {% else %}
+      <!-- Regular Price Display -->
+      <div class="price-regular">
+        <span class="current-price">
+          <span class="price-value">{{ current_price }}</span>
+        </span>
+      </div>
+    {% endif %}
+  {% else %}
+    {% if fallback_price %}
+      <!-- Fallback Price Display -->
+      <div class="price-fallback">
+        <span class="fallback-price">
+          <span class="price-value">{{ fallback_price }}</span>
+        </span>
+      </div>
+    {% else %}
+      <!-- No Price Available -->
+      <div class="price-unavailable">
+        <span class="no-price-text">
+          <i class="fas fa-question-circle"></i>
+          Price not available
+        </span>
+      </div>
+    {% endif %}
+  {% endif %}
+</div>

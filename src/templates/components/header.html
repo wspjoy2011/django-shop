@@ -1,0 +1,149 @@
+{% load static %}
+{% load avatar_extras %}
+{% load nav_active %}
+
+<header class="p-3 text-bg-dark">
+  <div class="container">
+    <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-lg-start">
+
+      <!-- Primary navigation -->
+      <ul class="nav nav-pills col-12 col-lg-auto me-lg-auto mb-2 justify-content-center mb-md-0 gap-1">
+
+        <li class="nav-item">
+          <a href="{% url 'catalog:home' %}"
+             class="nav-link {{ request|is_active:'catalog:home'|default:'text-light' }}">
+            Home
+          </a>
+        </li>
+
+        <li class="nav-item">
+          <a href="{% url 'catalog:product_list' %}"
+             class="nav-link {{ request|is_active:'catalog:product_list'|default:'text-light' }}">
+            Catalog
+          </a>
+        </li>
+
+        <!-- Categories nested menu -->
+        {% include 'layout/menu.html' %}
+
+        {% if request.user.is_authenticated and request.user.is_staff %}
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle {{ request|is_active:'catalog:product_create'|default:'text-light' }}"
+               href="#" id="staffActionsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="fas fa-toolbox me-1"></i> Manage
+            </a>
+            <ul class="dropdown-menu" aria-labelledby="staffActionsDropdown">
+              <li>
+                <a class="dropdown-item" href="{% url 'catalog:product_create' %}">
+                  <i class="fas fa-plus-circle me-2"></i>Add Product
+                </a>
+              </li>
+            </ul>
+          </li>
+        {% endif %}
+
+      </ul>
+
+      <!-- Search -->
+      <form class="col-12 col-lg-auto mb-3 mb-lg-0 me-lg-3" role="search" method="get" action="#">
+        <div class="input-group">
+          <span class="input-group-text">
+            <i class="fas fa-search"></i>
+          </span>
+          <input type="search"
+                 class="form-control text-bg-dark search-input-dark"
+                 placeholder="Search..."
+                 aria-label="Search"
+                 name="q">
+        </div>
+      </form>
+
+      <!-- Favorites heart icon (only for authenticated users) -->
+      {% if user.is_authenticated %}
+        <div class="me-3">
+          <a href="{% url 'favorites:collection_list' %}"
+             class="text-decoration-none position-relative favorites-heart-container"
+             data-tooltip="My favorites ({{ favorites_total_count }})">
+            {% if favorites_total_count > 0 %}
+              <i class="fas fa-heart favorites-heart-filled fs-4"></i>
+            {% else %}
+              <i class="far fa-heart favorites-heart-empty fs-4"></i>
+            {% endif %}
+            {% if favorites_total_count > 0 %}
+              <span class="favorites-count-bubble">
+                {{ favorites_total_count }}
+              </span>
+            {% endif %}
+          </a>
+        </div>
+      {% endif %}
+
+      <!-- Auth controls -->
+      <ul class="nav align-items-center">
+
+        {% if user.is_authenticated %}
+          <!-- Authenticated user -->
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle px-3 d-flex align-items-center text-white" href="#"
+               id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <img src="{{ request.user.email|avatar_url:28 }}" alt="{{ user.username }}"
+                   class="rounded-circle me-2" style="width: 28px; height: 28px; object-fit: cover;">
+              {{ user.username }}
+              {% if user.is_staff %}
+                <span class="badge bg-warning ms-2">Staff</span>
+              {% endif %}
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+              <li>
+                <a class="dropdown-item" href="#">
+                  <i class="fas fa-user-circle me-2"></i>Profile
+                </a>
+              </li>
+              <li>
+                <a class="dropdown-item" href="#">
+                  <i class="fas fa-cog me-2"></i>Settings
+                </a>
+              </li>
+              {% if user.is_staff %}
+                <li>
+                  <hr class="dropdown-divider">
+                </li>
+                <li>
+                  <a class="dropdown-item" href="/admin/" target="_blank" rel="noopener">
+                    <i class="fas fa-tools me-2 text-warning"></i>Django Admin
+                    <i class="fas fa-external-link-alt ms-1 small"></i>
+                  </a>
+                </li>
+              {% endif %}
+              <li>
+                <hr class="dropdown-divider">
+              </li>
+              <li>
+                <form method="post" action="" class="d-inline">
+                  {% csrf_token %}
+                  <button type="submit" class="dropdown-item border-0 bg-transparent text-start w-100">
+                    <i class="fas fa-sign-out-alt me-2"></i>Logout
+                  </button>
+                </form>
+              </li>
+            </ul>
+          </li>
+        {% else %}
+
+          <!-- Guest user: login/register buttons -->
+          <li class="nav-item">
+            <a class="btn btn-outline-light me-2" href="">
+              <i class="fas fa-sign-in-alt me-1"></i>Login
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="btn btn-warning" href="">
+              <i class="fas fa-user-plus me-1"></i>Sign-up
+            </a>
+          </li>
+        {% endif %}
+      </ul>
+
+    </div>
+  </div>
+</header>

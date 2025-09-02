@@ -1,0 +1,31 @@
+<div class="likes-dislikes-component {{ size_class }} {{ extra_class }}"
+     data-like-url="{{ like_url }}"
+     data-dislike-url="{{ dislike_url }}"
+     data-product-id="{{ product_id }}"
+     data-authenticated="{% if user.is_authenticated %}true{% else %}false{% endif %}">
+
+  <div class="likes-dislikes-wrapper d-flex align-items-center gap-2">
+    <!-- Likes -->
+    <div class="likes-item d-flex align-items-center {{ like_classes }}{% if user_liked %} user-liked{% endif %}"
+         title="{% if not user.is_authenticated %}Login to like products{% elif user_liked %}You liked this product{% endif %}">
+      <i class="fas fa-thumbs-up likes-icon"></i>
+      {% if show_counts %}
+        <span class="likes-count ms-1">{{ likes_count }}</span>
+      {% endif %}
+    </div>
+
+    <!-- Dislikes -->
+    <div class="dislikes-item d-flex align-items-center {{ dislike_classes }}{% if user_disliked %} user-disliked{% endif %}"
+         title="{% if not user.is_authenticated %}Login to dislike products{% elif user_disliked %}You disliked this product{% endif %}">
+      <i class="fas fa-thumbs-down dislikes-icon"></i>
+      {% if show_counts %}
+        <span class="dislikes-count ms-1">{{ dislikes_count }}</span>
+      {% endif %}
+    </div>
+
+    <!-- Messages Container -->
+    <div class="likes-messages-container position-absolute" style="z-index: 9999;">
+    </div>
+
+  </div>
+</div>

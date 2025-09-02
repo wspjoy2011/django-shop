@@ -10,23 +10,54 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 import os
+import socket
+import warnings
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Project data paths
+
+DATASETS_DIR_ENV = os.getenv('DATASETS_DIR')
+
+if not DATASETS_DIR_ENV:
+    warnings.warn(
+        "DATASETS_DIR environment variable is not set. "
+        "Dataset-related functionality may not work properly. "
+        "Set DATASETS_DIR to the path containing your dataset files.",
+        UserWarning,
+        stacklevel=2
+    )
+else:
+    DATASETS_DIR = Path(DATASETS_DIR_ENV)
+    IMAGES_DATASET_CSV = DATASETS_DIR / 'images.csv'
+    PRODUCTS_DATASET_CSV = DATASETS_DIR / 'products.csv'
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-(=4uy1mox-z16#g4^(_s*m8nvcohy^n#8@dcnfdltqez5vqo$5'
+SECRET_KEY = 'django-insecure-ox)m@cfm+411e!drko=sa@el5+t1!#r!411pr#xm(f8&bxn1op'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
 ALLOWED_HOSTS = []
 
+# Django Debug Toolbar configuration for Docker
+
+if DEBUG:
+    hostname, _, ips = socket.gethostbyname_ex(socket.gethostname())
+    INTERNAL_IPS = [
+        "127.0.0.1",
+        "localhost",
+    ]
+    INTERNAL_IPS.extend([ip[:-1] + "1" for ip in ips])
+    INTERNAL_IPS.extend(ips)
+else:
+    INTERNAL_IPS = ["127.0.0.1", "localhost"]
 
 # Application definition
 
@@ -37,6 +68,17 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    # Pypi third apps
+    'django_extensions',
+    'debug_toolbar',
+
+    # Project apps
+    'apps.accounts',
+    'apps.catalog',
+    'apps.inventories',
+    'apps.favorites',
+    'apps.ratings'
 ]
 
 MIDDLEWARE = [
@@ -45,6 +87,10 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+
+    # Debug toolbar
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
+
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -54,13 +100,20 @@ ROOT_URLCONF = 'core.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+
+                # Catalog navigation categories
+                'apps.catalog.context_processors.categories',
+
+                # Count user favorites products
+                'apps.favorites.context_processors.favorites_context',
+
             ],
         },
     },
@@ -153,7 +206,15 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',
+]
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# User model
+
+AUTH_USER_MODEL = 'accounts.User'

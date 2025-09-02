@@ -1,0 +1,33 @@
+<div class="col-12">
+  <div class="sort-inline d-inline-flex align-items-center px-3 py-2 mb-4">
+
+    <label for="sortSelect" class="form-label me-3 mb-0 fw-bold text-muted">
+      <i class="fas fa-sort me-2"></i>Sort by:
+    </label>
+
+    <select class="form-select sort-inline-select" id="sortSelect" style="width: auto;">
+      <option value="default" {% if not current_order %}selected{% endif %}>Default</option>
+
+      <!-- Product name -->
+      <option value="name_asc" {% if current_order == 'name_asc' %}selected{% endif %}>Name A-Z</option>
+      <option value="name_desc" {% if current_order == 'name_desc' %}selected{% endif %}>Name Z-A</option>
+
+      <!-- Product year -->
+      <option value="year_desc" {% if current_order == 'year_desc' %}selected{% endif %}>Year — Newest</option>
+      <option value="year_asc" {% if current_order == 'year_asc' %}selected{% endif %}>Year — Oldest</option>
+
+      <!-- Added to catalog -->
+      <option value="created_desc" {% if current_order == 'created_desc' %}selected{% endif %}>Added — Newest</option>
+      <option value="created_asc" {% if current_order == 'created_asc' %}selected{% endif %}>Added — Oldest</option>
+
+      <!-- Price -->
+      <option value="price_desc" {% if current_order == 'price_desc' %}selected{% endif %}>Price — Highest</option>
+      <option value="price_asc" {% if current_order == 'price_asc' %}selected{% endif %}>Price — Lowest</option>
+
+      <!-- Rating -->
+      <option value="rating_desc" {% if current_order == 'rating_desc' %}selected{% endif %}>Rating — Highest</option>
+      <option value="rating_asc" {% if current_order == 'rating_asc' %}selected{% endif %}>Rating — Lowest</option>
+    </select>
+
+  </div>
+</div>

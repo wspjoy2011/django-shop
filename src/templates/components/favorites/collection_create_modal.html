@@ -1,0 +1,97 @@
+<div class="collection-create-modal hidden">
+  <div class="modal-overlay"></div>
+  <div class="modal-container">
+    <div class="modal-header">
+      <h2 class="modal-title">
+        <i class="fas fa-heart me-2"></i>
+        Create New Collection
+      </h2>
+      <button type="button" class="modal-close" aria-label="Close">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <form class="collection-create-form">
+      <div class="modal-body">
+        <div class="form-errors hidden"></div>
+
+        <div class="form-group">
+          <label for="collection-name" class="form-label">
+            Collection Name <span class="required">*</span>
+          </label>
+          <input
+                  type="text"
+                  id="collection-name"
+                  name="name"
+                  class="form-control"
+                  placeholder="Enter collection name"
+                  maxlength="255"
+                  required
+          >
+          <div class="field-error" data-field="name"></div>
+        </div>
+
+        <div class="form-group">
+          <label for="collection-description" class="form-label">
+            Description
+          </label>
+          <textarea
+                  id="collection-description"
+                  name="description"
+                  class="form-control"
+                  placeholder="Optional description of your collection"
+                  rows="3"
+                  maxlength="1000"
+          ></textarea>
+          <div class="field-error" data-field="description"></div>
+        </div>
+
+        <div class="form-options">
+          <div class="form-check">
+            <input
+                    type="checkbox"
+                    id="collection-is-public"
+                    name="is_public"
+                    class="form-check-input"
+            >
+            <label for="collection-is-public" class="form-check-label">
+              <i class="fas fa-globe me-1"></i>
+              Make this collection public
+            </label>
+            <small class="form-text">Other users will be able to see this collection</small>
+          </div>
+
+          <div class="form-check">
+            <input
+                    type="checkbox"
+                    id="collection-is-default"
+                    name="is_default"
+                    class="form-check-input"
+            >
+            <label for="collection-is-default" class="form-check-label">
+              <i class="fas fa-star me-1"></i>
+              Set as default collection
+            </label>
+            <small class="form-text">New favorites will be added to this collection</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary modal-cancel">
+          <i class="fas fa-times me-1"></i>
+          Cancel
+        </button>
+        <button type="submit" class="btn btn-primary modal-submit">
+                    <span class="loading-spinner hidden">
+                        <i class="fas fa-spinner fa-spin me-1"></i>
+                    </span>
+          <span class="button-text">
+                        <i class="fas fa-plus me-1"></i>
+                        Create Collection
+                    </span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

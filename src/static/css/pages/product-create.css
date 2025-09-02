@@ -1,0 +1,52 @@
+/* Card styling */
+.product-form-card {
+    border-radius: 16px;
+    border: 1px solid rgba(13, 110, 253, .08);
+}
+
+.product-form-card .card-header {
+    background: linear-gradient(90deg, rgba(13, 110, 253, .06), rgba(111, 66, 193, .06));
+    border-bottom: 1px solid rgba(13, 110, 253, .12);
+}
+
+/* Soft separator */
+.soft-sep {
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(0, 0, 0, .06), transparent);
+    margin: 10px 0 6px;
+}
+
+/* Inputs */
+.form-label {
+    font-weight: 600;
+}
+
+/* Image preview */
+.image-preview-wrap {
+    position: relative;
+    background: #f8fafc;
+    border: 1px solid rgba(0, 0, 0, .06);
+    border-radius: 12px;
+    min-height: 110px;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+}
+
+.image-preview-wrap img {
+    display: none;
+    width: 100%;
+    height: 160px;
+    object-fit: cover;
+}
+
+.image-preview-placeholder {
+    font-size: .9rem;
+}
+
+/* Read-only displays */
+#id_master_category_display[disabled],
+#id_sub_category_display[disabled] {
+    background-color: #f8f9fa;
+    color: #495057;
+}

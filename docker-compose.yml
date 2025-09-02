@@ -13,6 +13,7 @@ services:
       - LOG_LEVEL=debug
     volumes:
       - ./src:/usr/src/clothing-store/
+      - ./datasets:/usr/src/datasets:ro
     depends_on:
       db:
         condition: service_healthy

@@ -1,0 +1,14 @@
+<div class="col-12">
+  <div class="sort-inline d-inline-flex align-items-center px-3 py-2 mb-4">
+    <label for="perPageSelect" class="form-label me-3 mb-0 fw-bold text-muted">
+      <i class="fas fa-list-ol me-2"></i>Per page:
+    </label>
+    <select class="form-select sort-inline-select" id="perPageSelect" style="width: auto;">
+      <option value="8" {% if current_per_page == '8' %}selected{% endif %}>8</option>
+      <option value="12" {% if current_per_page == '12' %}selected{% endif %}>12</option>
+      <option value="16" {% if current_per_page == '16' %}selected{% endif %}>16</option>
+      <option value="20" {% if current_per_page == '20' %}selected{% endif %}>20</option>
+      <option value="24" {% if current_per_page == '24' or not current_per_page %}selected{% endif %}>24</option>
+    </select>
+  </div>
+</div>
