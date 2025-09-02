@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
-
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -72,13 +72,50 @@ WSGI_APPLICATION = 'core.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
+USE_PGBOUNCER = os.getenv('USE_PGBOUNCER', 'false').lower() == 'true'
 
+if USE_PGBOUNCER:
+    PGBOUNCER_USER = os.getenv('PGBOUNCER_USER')
+    PGBOUNCER_PASSWORD = os.getenv('PGBOUNCER_PASSWORD')
+    PGBOUNCER_HOST = os.getenv('PGBOUNCER_HOST')
+    POSTGRES_DB = os.getenv('POSTGRES_DB')
+
+    if not all([PGBOUNCER_USER, PGBOUNCER_PASSWORD, PGBOUNCER_HOST, POSTGRES_DB]):
+        raise ValueError(
+            "Missing required PgBouncer environment variables:"
+            " PGBOUNCER_USER, PGBOUNCER_PASSWORD, PGBOUNCER_HOST, POSTGRES_DB")
+
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': POSTGRES_DB,
+            'USER': PGBOUNCER_USER,
+            'PASSWORD': PGBOUNCER_PASSWORD,
+            'HOST': PGBOUNCER_HOST,
+            'PORT': os.getenv('PGBOUNCER_PORT', '6432'),
+        }
+    }
+else:
+    POSTGRES_USER = os.getenv('POSTGRES_USER')
+    POSTGRES_PASSWORD = os.getenv('POSTGRES_PASSWORD')
+    POSTGRES_HOST = os.getenv('POSTGRES_HOST')
+    POSTGRES_DB = os.getenv('POSTGRES_DB')
+
+    if not all([POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_HOST, POSTGRES_DB]):
+        raise ValueError(
+            "Missing required PostgreSQL environment variables:"
+            " POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_HOST, POSTGRES_DB")
+
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': POSTGRES_DB,
+            'USER': POSTGRES_USER,
+            'PASSWORD': POSTGRES_PASSWORD,
+            'HOST': POSTGRES_HOST,
+            'PORT': os.getenv('POSTGRES_DB_PORT', '5432'),
+        }
+    }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators

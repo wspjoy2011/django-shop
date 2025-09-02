@@ -8,6 +8,7 @@ services:
     command: [ "run-django-dev.sh" ]
     env_file:
       - .env
+      - ./services/pgbouncer/.env
     environment:
       - LOG_LEVEL=debug
     volumes:
@@ -39,6 +40,28 @@ services:
       timeout: 5s
       retries: 5
       start_period: 20s
+
+  pgbouncer:
+    build:
+      context: ./services/pgbouncer
+      dockerfile: Dockerfile
+    container_name: pgbouncer-django-store
+    restart: always
+    env_file:
+      - .env
+      - ./services/pgbouncer/.env
+    ports:
+      - "6432:6432"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - django-store-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $${PGBOUNCER_USER} -d $${POSTGRES_DB} || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
 volumes:
   postgres-django-store-data:
