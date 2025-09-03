@@ -1,8 +1,14 @@
-import {getCookie, isLoginRedirectResponse, isLoginRedirectErrorLike} from '../utils/httpAuth.js';
-import {BroadcastManager, ComponentFinder} from '../utils/broadcastManager.js';
+import { ComponentFinder } from '../utils/broadcastManager.js';
+import { BaseComponent } from '../utils/components/BaseComponent.js';
+import { MessageManager } from '../utils/components/MessageManager.js';
+import { AuthenticationHandler } from '../utils/components/AuthenticationHandler.js';
+import { AuthenticatedHttpClient } from '../utils/http/AuthenticatedHttpClient.js';
+import { LoadingStateManager } from '../utils/components/LoadingStateManager.js';
 
-class CollectionCreateModal {
+class CollectionCreateModal extends BaseComponent {
     constructor() {
+        super({ broadcastChannelName: 'collection-updates' });
+
         this.selectors = {
             createButton: '.btn-create-list',
             modal: '.collection-create-modal',
@@ -26,23 +32,16 @@ class CollectionCreateModal {
         };
 
         this.createUrl = '/favorites/collections/create/';
+        this.httpClient = new AuthenticatedHttpClient();
         this.init();
     }
 
     init() {
-        this.setupCSRF();
-        this.setupBroadcastChannel();
+        super.init();
         this.setupModal();
-        this.bindEvents();
     }
 
-    setupCSRF() {
-        this.csrfToken = getCookie('csrftoken');
-    }
-
-    setupBroadcastChannel() {
-        this.broadcastManager = BroadcastManager.createManager('collection-updates');
-
+    setupBroadcastSubscriptions() {
         this.broadcastManager.subscribe('collection_created', (data) => {
             this.handleCollectionCreatedMessage(data);
         });
@@ -89,10 +88,6 @@ class CollectionCreateModal {
         });
     }
 
-    broadcastLogoutDetection() {
-        this.broadcastManager.broadcast('logout_detected', {});
-    }
-
     setupModal() {
         this.modal = document.querySelector(this.selectors.modal);
 
@@ -102,6 +97,8 @@ class CollectionCreateModal {
     }
 
     bindEvents() {
+        super.bindEvents();
+
         document.addEventListener('click', (e) => {
             if (e.target.closest(this.selectors.createButton)) {
                 e.preventDefault();
@@ -139,10 +136,6 @@ class CollectionCreateModal {
             if (e.key === 'Escape' && !this.modal?.classList.contains(this.cssClasses.hidden)) {
                 this.closeModal();
             }
-        });
-
-        window.addEventListener('beforeunload', () => {
-            this.broadcastManager?.close();
         });
     }
 
@@ -188,22 +181,26 @@ class CollectionCreateModal {
         this.setLoadingState(true);
 
         try {
-            const response = await this.sendRequest(formData);
+            const result = await this.httpClient.handleResponse(
+                await this.httpClient.sendJSON(this.createUrl, formData),
+                null,
+                {
+                    onLoginRedirect: (loginUrl) => this.handleLogoutDetection(loginUrl),
+                    onSuccess: (data) => {
+                        if (data.success) {
+                            this.handleSuccess(data.collection);
+                        } else {
+                            this.handleErrors(data.errors || {non_field_errors: ['Unknown error occurred']});
+                        }
+                    },
+                    onError: () => {
+                        this.handleErrors({non_field_errors: ['Network error. Please try again.']});
+                    }
+                }
+            );
 
-            if (isLoginRedirectResponse(response)) {
-                this.handleLogoutDetection(response.url);
-                return;
-            }
-
-            const data = await response.json();
-
-            if (response.ok && data.success) {
-                this.handleSuccess(data.collection);
-            } else {
-                this.handleErrors(data.errors || {non_field_errors: ['Unknown error occurred']});
-            }
         } catch (error) {
-            if (isLoginRedirectErrorLike(error)) {
+            if (AuthenticationHandler.isAuthenticationError(error)) {
                 this.handleLogoutDetection();
             } else {
                 this.handleErrors({non_field_errors: ['Network error. Please try again.']});
@@ -214,11 +211,11 @@ class CollectionCreateModal {
     }
 
     handleLogoutDetection(loginUrl = null) {
-        this.broadcastLogoutDetection();
+        this.broadcastManager.broadcast('logout_detected', {});
         this.closeModal();
 
         const message = loginUrl ? 'Session expired.' : 'Session expired. Please log in again.';
-        this.showGlobalMessage(message, 'warning');
+        MessageManager.showGlobalMessage(message, 'warning');
     }
 
     getFormData() {
@@ -231,18 +228,6 @@ class CollectionCreateModal {
             is_public: form.is_public.checked,
             is_default: isEmptyState ? true : form.is_default.checked
         };
-    }
-
-    async sendRequest(data) {
-        return fetch(this.createUrl, {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: {
-                'X-CSRFToken': this.csrfToken,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(data)
-        });
     }
 
     handleSuccess(collection) {
@@ -267,6 +252,28 @@ class CollectionCreateModal {
 
         if (errors.non_field_errors) {
             this.showErrorMessage(errors.non_field_errors[0]);
+        }
+    }
+
+    setLoadingState(isLoading) {
+        LoadingStateManager.setModalLoadingState(this.modal, isLoading, this.selectors, this.cssClasses);
+    }
+
+    showSuccessMessage(message) {
+        const errorContainer = this.modal?.querySelector(this.selectors.errorContainer);
+
+        if (errorContainer) {
+            errorContainer.className = 'form-errors success';
+            errorContainer.innerHTML = `<i class="fas fa-check me-1"></i>${MessageManager.escapeHtml(message)}`;
+        }
+    }
+
+    showErrorMessage(message) {
+        const errorContainer = this.modal?.querySelector(this.selectors.errorContainer);
+
+        if (errorContainer) {
+            errorContainer.className = 'form-errors error';
+            errorContainer.innerHTML = `<i class="fas fa-exclamation-triangle me-1"></i>${MessageManager.escapeHtml(message)}`;
         }
     }
 
@@ -390,7 +397,7 @@ class CollectionCreateModal {
         if (titleText) {
             titleText.textContent = collection.name;
         } else {
-            titleElement.innerHTML = this.escapeHtml(collection.name);
+            titleElement.innerHTML = MessageManager.escapeHtml(collection.name);
         }
 
         if (collection.is_default) {
@@ -593,73 +600,6 @@ class CollectionCreateModal {
             errorContainer.innerHTML = '';
             errorContainer.classList.add(this.cssClasses.hidden);
         }
-    }
-
-    setLoadingState(isLoading) {
-        if (!this.modal) return;
-
-        const submitButton = this.modal.querySelector(this.selectors.submitButton);
-        const spinner = this.modal.querySelector(this.selectors.loadingSpinner);
-
-        if (submitButton) {
-            submitButton.disabled = isLoading;
-        }
-
-        if (spinner) {
-            spinner.classList.toggle(this.cssClasses.hidden, !isLoading);
-        }
-    }
-
-    showSuccessMessage(message) {
-        const errorContainer = this.modal?.querySelector(this.selectors.errorContainer);
-
-        if (errorContainer) {
-            errorContainer.className = 'form-errors success';
-            errorContainer.innerHTML = `<i class="fas fa-check me-1"></i>${this.escapeHtml(message)}`;
-        }
-    }
-
-    showErrorMessage(message) {
-        const errorContainer = this.modal?.querySelector(this.selectors.errorContainer);
-
-        if (errorContainer) {
-            errorContainer.className = 'form-errors error';
-            errorContainer.innerHTML = `<i class="fas fa-exclamation-triangle me-1"></i>${this.escapeHtml(message)}`;
-        }
-    }
-
-    showGlobalMessage(message, type = 'info') {
-        const messagesContainer = document.querySelector('.messages-container') ||
-            document.querySelector('#messages') ||
-            document.querySelector('.alert-container');
-
-        if (messagesContainer) {
-            const alertClass = type === 'warning' ? 'alert-warning' :
-                type === 'error' ? 'alert-danger' : 'alert-info';
-
-            const messageElement = document.createElement('div');
-            messageElement.className = `alert ${alertClass} alert-dismissible fade show`;
-            messageElement.innerHTML = `
-                ${this.escapeHtml(message)}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            `;
-
-            messagesContainer.appendChild(messageElement);
-
-            setTimeout(() => {
-                if (messageElement.parentNode) {
-                    messageElement.remove();
-                }
-            }, 5000);
-        } else {
-            console.warn('Global message:', message);
-        }
-    }
-
-    escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
     }
 }
 

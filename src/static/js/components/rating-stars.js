@@ -1,8 +1,13 @@
-import { getCookie, isLoginRedirectResponse, isLoginRedirectErrorLike } from '../utils/httpAuth.js';
-import { BroadcastManager, ComponentFinder } from '../utils/broadcastManager.js';
+import {ComponentFinder} from '../utils/broadcastManager.js';
+import {BaseComponent} from '../utils/components/BaseComponent.js';
+import {MessageManager} from '../utils/components/MessageManager.js';
+import {AuthenticationHandler} from '../utils/components/AuthenticationHandler.js';
+import {AuthenticatedHttpClient} from '../utils/http/AuthenticatedHttpClient.js';
 
-class RatingStarsHandler {
+class RatingStarsHandler extends BaseComponent {
     constructor() {
+        super({broadcastChannelName: 'rating-updates'});
+
         this.selectors = {
             component: '.rating-component',
             starsInput: '.rating-star-input',
@@ -16,23 +21,12 @@ class RatingStarsHandler {
             starsContainer: '.rating-stars-container',
             userRatingBadge: '.user-rating-badge-container'
         };
+
+        this.httpClient = new AuthenticatedHttpClient();
         this.init();
     }
 
-    init() {
-        this.setupCSRF();
-        this.setupBroadcastChannel();
-        this.bindEvents();
-        this.bootstrapInitialState();
-    }
-
-    setupCSRF() {
-        this.csrfToken = getCookie('csrftoken');
-    }
-
-    setupBroadcastChannel() {
-        this.broadcastManager = BroadcastManager.createManager('rating-updates');
-
+    setupBroadcastSubscriptions() {
         this.broadcastManager.subscribe('rating_updated', (data) => {
             this.handleRatingUpdateMessage(data);
         });
@@ -47,7 +41,7 @@ class RatingStarsHandler {
     }
 
     handleRatingUpdateMessage(data) {
-        const { productId, ratingUrl, userScore, serverStats } = data;
+        const {productId, ratingUrl, userScore, serverStats} = data;
         const componentsToUpdate = this.findComponentsForUpdate(productId, ratingUrl);
 
         componentsToUpdate.forEach(comp => {
@@ -62,7 +56,7 @@ class RatingStarsHandler {
     }
 
     handleRatingRemoveMessage(data) {
-        const { productId, ratingUrl, serverStats } = data;
+        const {productId, ratingUrl, serverStats} = data;
         const componentsToUpdate = this.findComponentsForUpdate(productId, ratingUrl);
 
         componentsToUpdate.forEach(comp => {
@@ -73,14 +67,15 @@ class RatingStarsHandler {
     }
 
     handleLogoutMessage(data) {
-        const { productId, ratingUrl } = data;
+        const {productId, ratingUrl} = data;
         const componentsToUpdate = this.findComponentsForUpdate(productId, ratingUrl);
 
         componentsToUpdate.forEach(comp => {
-            comp.dataset.authenticated = 'false';
-            comp.dataset.userRated = 'false';
-            comp.classList.remove('rated-active');
-            this.resetUserRatingUI(comp);
+            AuthenticationHandler.resetAuthenticationState(comp, (component) => {
+                component.dataset.userRated = 'false';
+                component.classList.remove('rated-active');
+                this.resetUserRatingUI(component);
+            });
         });
     }
 
@@ -111,14 +106,9 @@ class RatingStarsHandler {
         });
     }
 
-    broadcastLogoutDetection(component) {
-        this.broadcastManager.broadcast('logout_detected', {
-            productId: component.dataset.productId,
-            ratingUrl: component.dataset.ratingUrl
-        });
-    }
-
     bindEvents() {
+        super.bindEvents();
+
         document.addEventListener('click', (e) => {
             const star = e.target.closest(this.selectors.starsInput);
             if (star) {
@@ -155,10 +145,6 @@ class RatingStarsHandler {
                 this.previewStars(component, 0);
             }
         });
-
-        window.addEventListener('beforeunload', () => {
-            this.broadcastManager?.close();
-        });
     }
 
     bootstrapInitialState() {
@@ -183,116 +169,101 @@ class RatingStarsHandler {
 
     async onStarClick(component, starEl) {
         if (!this.isAuthenticated(component)) {
-            this.showMessage('Login required', 'info', component);
+            MessageManager.showMessage('Login required', 'info', component.querySelector(this.selectors.messages), MessageManager.RATING_CONFIG);
             return;
         }
+
         const score = Number(starEl.dataset.score || 0);
         if (!score) return;
 
         const url = component.dataset.ratingUrl;
         try {
-            const resp = await this.sendForm(url, {score});
+            const result = await this.httpClient.handleResponse(
+                await this.httpClient.sendForm(url, {score}),
+                component,
+                {
+                    onLoginRedirect: (loginUrl) => this.handleLogoutDetection(component, loginUrl),
+                    onSuccess: (data) => {
+                        const componentsToUpdate = this.getAllProductComponents(component);
+                        componentsToUpdate.forEach(comp => {
+                            this.applyServerStats(comp, data);
+                            this.toggleRatedState(comp, true);
+                            comp.dataset.userScore = score;
+                            this.setInitialUserRatingPreview(comp, score);
+                            this.toggleUserIndicator(comp, true, score);
+                            this.toggleUserRatingBadge(comp, true, score);
+                            this.updateContainerTitle(comp);
+                        });
 
-            if (isLoginRedirectResponse(resp)) {
-                this.handleLogoutDetection(component, resp.url);
-                return;
-            }
-
-            if (!resp.ok) {
-                let errorMessage = 'Failed to save rating';
-                try {
-                    const text = await resp.text();
-                    if (text && text.trim()) {
-                        errorMessage = `Server error: ${resp.status}`;
+                        this.broadcastRatingUpdate(component, score, data);
+                        MessageManager.showMessage(`Rated ${score} star${score !== 1 ? 's' : ''}`, 'success', component.querySelector(this.selectors.messages), MessageManager.RATING_CONFIG);
+                    },
+                    onError: (error) => {
+                        let errorMessage = 'Failed to save rating';
+                        if (error.message.includes('Cannot read server response')) {
+                            errorMessage = 'Cannot read server response';
+                        } else if (error.message.includes('Server error')) {
+                            errorMessage = `Server error: ${error.message.split(': ')[1]}`;
+                        }
+                        MessageManager.showMessage(errorMessage, 'error', component.querySelector(this.selectors.messages), MessageManager.RATING_CONFIG);
                     }
-                } catch (_) {
-                    this.showError('Cannot read server response', component);
-                    return;
                 }
-                throw new Error(`${errorMessage} (${resp.status})`);
-            }
-            const data = await resp.json();
+            );
 
-            const componentsToUpdate = this.getAllProductComponents(component);
-
-            componentsToUpdate.forEach(comp => {
-                this.applyServerStats(comp, data);
-                this.toggleRatedState(comp, true);
-                comp.dataset.userScore = score;
-                this.setInitialUserRatingPreview(comp, score);
-                this.toggleUserIndicator(comp, true, score);
-                this.toggleUserRatingBadge(comp, true, score);
-                this.updateContainerTitle(comp);
-            });
-
-            this.broadcastRatingUpdate(component, score, data);
-
-            this.showMessage(`Rated ${score} star${score !== 1 ? 's' : ''}`, 'success', component);
         } catch (err) {
-            if (isLoginRedirectErrorLike(err)) {
+            if (AuthenticationHandler.isAuthenticationError(err)) {
                 this.handleLogoutDetection(component);
             } else {
-                this.showError(err.message || 'Failed to save rating', component);
+                MessageManager.showMessage(err.message || 'Failed to save rating', 'error', component.querySelector(this.selectors.messages), MessageManager.RATING_CONFIG);
             }
         }
     }
 
     async onClearClick(component) {
         if (!this.isAuthenticated(component)) {
-            this.showMessage('Login required', 'info', component);
+            MessageManager.showMessage('Login required', 'info', component.querySelector(this.selectors.messages), MessageManager.RATING_CONFIG);
             return;
         }
+
         const url = component.dataset.ratingDeleteUrl;
         try {
-            const resp = await this.sendForm(url, {});
+            const response = await this.httpClient.sendForm(url, {});
 
-            if (isLoginRedirectResponse(resp)) {
-                this.handleLogoutDetection(component, resp.url);
+            if (AuthenticationHandler.isLoginRedirect(response)) {
+                this.handleLogoutDetection(component, response.url);
                 return;
             }
 
-            if (resp.status === 404) {
+            if (response.status === 404) {
                 const componentsToUpdate = this.getAllProductComponents(component);
                 componentsToUpdate.forEach(comp => {
                     this.toggleRatedState(comp, false);
                     this.resetUserRatingUI(comp);
                 });
-                this.broadcastRatingRemove(component, { avg_rating: 0.0, ratings_count: 0 });
-                this.showMessage('Rating was already removed', 'info', component);
+                this.broadcastRatingRemove(component, {avg_rating: 0.0, ratings_count: 0});
+                MessageManager.showMessage('Rating was already removed', 'info', component.querySelector(this.selectors.messages), MessageManager.RATING_CONFIG);
                 return;
             }
 
-            if (!resp.ok) {
-                let errorMessage = 'Failed to remove rating';
-                try {
-                    const text = await resp.text();
-                    if (text && text.trim()) {
-                        errorMessage = `Server error: ${resp.status}`;
-                    }
-                } catch (_) {
-                    this.showError('Cannot read server response', component);
-                    return;
+            const result = await this.httpClient.handleResponse(response, component, {
+                onSuccess: (data) => {
+                    const componentsToUpdate = this.getAllProductComponents(component);
+                    componentsToUpdate.forEach(comp => {
+                        this.applyServerStats(comp, data);
+                        this.toggleRatedState(comp, false);
+                        this.resetUserRatingUI(comp);
+                    });
+
+                    this.broadcastRatingRemove(component, data);
+                    MessageManager.showMessage('Rating removed', 'success', component.querySelector(this.selectors.messages), MessageManager.RATING_CONFIG);
                 }
-                throw new Error(`${errorMessage} (${resp.status})`);
-            }
-
-            const data = await resp.json();
-            const componentsToUpdate = this.getAllProductComponents(component);
-
-            componentsToUpdate.forEach(comp => {
-                this.applyServerStats(comp, data);
-                this.toggleRatedState(comp, false);
-                this.resetUserRatingUI(comp);
             });
 
-            this.broadcastRatingRemove(component, data);
-
-            this.showMessage('Rating removed', 'success', component);
         } catch (err) {
-            if (isLoginRedirectErrorLike(err)) {
+            if (AuthenticationHandler.isAuthenticationError(err)) {
                 this.handleLogoutDetection(component);
             } else {
-                this.showError(err.message || 'Failed to remove rating', component);
+                MessageManager.showMessage(err.message || 'Failed to remove rating', 'error', component.querySelector(this.selectors.messages), MessageManager.RATING_CONFIG);
             }
         }
     }
@@ -311,19 +282,25 @@ class RatingStarsHandler {
     }
 
     handleLogoutDetection(component, loginUrl = null) {
-        const componentsToUpdate = this.getAllProductComponents(component);
-
-        componentsToUpdate.forEach(comp => {
-            comp.dataset.authenticated = 'false';
-            comp.dataset.userRated = 'false';
-            comp.classList.remove('rated-active');
-            this.resetUserRatingUI(comp);
+        AuthenticationHandler.handleLogoutDetection(component, this.broadcastManager, {
+            loginUrl,
+            messageManager: MessageManager,
+            messageContainer: component.querySelector(this.selectors.messages),
+            productIdGetter: (comp, forBroadcast = false) => {
+                if (forBroadcast) {
+                    return {
+                        productId: comp.dataset.productId,
+                        ratingUrl: comp.dataset.ratingUrl
+                    };
+                }
+                return this.getAllProductComponents(comp);
+            },
+            resetCallback: (comp) => {
+                comp.dataset.userRated = 'false';
+                comp.classList.remove('rated-active');
+                this.resetUserRatingUI(comp);
+            }
         });
-
-        this.broadcastLogoutDetection(component);
-
-        const message = loginUrl ? 'Session expired.' : 'Session expired.';
-        this.showMessage(message, 'warning', component);
     }
 
     updateContainerTitle(component) {
@@ -458,67 +435,6 @@ class RatingStarsHandler {
             const n = Number(data.ratings_count) || 0;
             reviewsEl.textContent = n > 0 ? `(${n} review${n === 1 ? '' : 's'})` : '';
         }
-    }
-
-    async sendForm(url, obj) {
-        const body = new URLSearchParams();
-        for (const [k, v] of Object.entries(obj)) {
-            body.append(k, String(v));
-        }
-        return fetch(url, {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: {
-                'X-CSRFToken': this.csrfToken,
-                'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
-            },
-            body: body.toString()
-        });
-    }
-
-    isAuthenticated(component) {
-        return component.dataset.authenticated === 'true';
-    }
-
-    showError(message, component) {
-        this.showMessage(message, 'error', component);
-    }
-
-    showMessage(message, type, component) {
-        const container = component.querySelector(this.selectors.messages);
-        if (!container) {
-            return;
-        }
-
-        container.innerHTML = '';
-        const el = this.createMessageElement(message, type);
-        container.appendChild(el);
-        setTimeout(() => this.removeMessage(el), type === 'error' ? 3000 : 2000);
-        el.addEventListener('click', () => this.removeMessage(el));
-    }
-
-    createMessageElement(message, type) {
-        const wrap = document.createElement('div');
-        const cls = {
-            success: 'bg-success',
-            error: 'bg-danger',
-            info: 'bg-info',
-            warning: 'bg-warning',
-        }[type] || 'bg-info';
-        wrap.className = `${cls}`;
-        wrap.textContent = message;
-        wrap.style.cursor = 'pointer';
-        wrap.style.userSelect = 'none';
-        wrap.style.animation = 'fadeInUp .2s ease-out';
-        return wrap;
-    }
-
-    removeMessage(el) {
-        if (!el || !el.parentNode) return;
-        el.style.animation = 'fadeOutUp .2s ease-in';
-        setTimeout(() => {
-            if (el.parentNode) el.parentNode.removeChild(el);
-        }, 200);
     }
 }
 

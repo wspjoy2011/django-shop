@@ -1,8 +1,14 @@
-import { getCookie, isLoginRedirectResponse, isLoginRedirectErrorLike } from '../utils/httpAuth.js';
-import { BroadcastManager, ComponentFinder } from '../utils/broadcastManager.js';
+import { ComponentFinder } from '../utils/broadcastManager.js';
+import { BaseComponent } from '../utils/components/BaseComponent.js';
+import { MessageManager } from '../utils/components/MessageManager.js';
+import { AuthenticationHandler } from '../utils/components/AuthenticationHandler.js';
+import { AuthenticatedHttpClient } from '../utils/http/AuthenticatedHttpClient.js';
+import { LoadingStateManager } from '../utils/components/LoadingStateManager.js';
 
-class LikesDislikesHandler {
+class LikesDislikesHandler extends BaseComponent {
     constructor() {
+        super({ broadcastChannelName: 'likes-dislikes-updates' });
+
         this.selectors = {
             component: '.likes-dislikes-component',
             likeButton: '.likes-item',
@@ -24,6 +30,7 @@ class LikesDislikesHandler {
             unauthenticated: 'unauthenticated'
         };
 
+        this.httpClient = new AuthenticatedHttpClient();
         this.init();
     }
 
@@ -34,13 +41,7 @@ class LikesDislikesHandler {
         this.setupAuthUI();
     }
 
-    setupCSRF() {
-        this.csrfToken = getCookie('csrftoken');
-    }
-
-    setupBroadcastChannel() {
-        this.broadcastManager = BroadcastManager.createManager('likes-dislikes-updates');
-
+    setupBroadcastSubscriptions() {
         this.broadcastManager.subscribe('like_dislike_updated', (data) => {
             this.handleLikeDislikeUpdateMessage(data);
         });
@@ -60,23 +61,23 @@ class LikesDislikesHandler {
         });
     }
 
-    applyUnauthenticatedState(component) {
-        component.dataset.authenticated = 'false';
-        component.classList.add(this.cssClasses.unauthenticated);
-
-        const buttons = component.querySelectorAll(`${this.selectors.likeButton}, ${this.selectors.dislikeButton}`);
-        buttons.forEach(b => (b.style.cursor = 'default'));
-
-        this.resetSelectionState(component);
-        this.ensureAuthHintTitles(component);
-    }
-
     handleLogoutMessage(data) {
         const { productId } = data;
         const componentsToUpdate = this.findComponentsForUpdate(productId);
 
         componentsToUpdate.forEach(comp => {
             this.applyUnauthenticatedState(comp);
+        });
+    }
+
+    applyUnauthenticatedState(component) {
+        AuthenticationHandler.applyUnauthenticatedState(component, {
+            cssClasses: this.cssClasses,
+            selectors: { buttons: `${this.selectors.likeButton}, ${this.selectors.dislikeButton}` },
+            resetCallback: (comp) => {
+                this.resetSelectionState(comp);
+                this.ensureAuthHintTitles(comp);
+            }
         });
     }
 
@@ -98,15 +99,9 @@ class LikesDislikesHandler {
         });
     }
 
-    broadcastLogoutDetection(component) {
-        this.broadcastManager.broadcast('logout_detected', {
-            productId: component.dataset.productId
-        });
-    }
-
     setupAuthUI() {
         document.querySelectorAll(this.selectors.component).forEach(component => {
-            const isAuthenticated = this.validateAuthentication(component);
+            const isAuthenticated = AuthenticationHandler.validateAuthentication(component);
             const buttons = component.querySelectorAll(`${this.selectors.likeButton}, ${this.selectors.dislikeButton}`);
 
             if (!isAuthenticated) {
@@ -123,6 +118,8 @@ class LikesDislikesHandler {
     }
 
     bindEvents() {
+        super.bindEvents();
+
         document.addEventListener('click', (e) => {
             const likeButton = e.target.closest(this.selectors.likeButton);
             const dislikeButton = e.target.closest(this.selectors.dislikeButton);
@@ -135,20 +132,16 @@ class LikesDislikesHandler {
                 void this.handleDislikeClick(dislikeButton);
             }
         });
-
-        window.addEventListener('beforeunload', () => {
-            this.broadcastManager?.close();
-        });
     }
 
     async handleLikeClick(likeButton) {
         const component = likeButton.closest(this.selectors.component);
 
-        if (!this.validateAuthentication(component)) {
+        if (!AuthenticationHandler.validateAuthentication(component)) {
             this.showAuthenticationMessage(component);
             return;
         }
-        if (this.isLoading(component)) return;
+        if (LoadingStateManager.isLoading(component, { cssClass: this.cssClasses.disabled })) return;
 
         const url = component.dataset.likeUrl;
         await this.toggleRating(component, url, 'like');
@@ -157,11 +150,11 @@ class LikesDislikesHandler {
     async handleDislikeClick(dislikeButton) {
         const component = dislikeButton.closest(this.selectors.component);
 
-        if (!this.validateAuthentication(component)) {
+        if (!AuthenticationHandler.validateAuthentication(component)) {
             this.showAuthenticationMessage(component);
             return;
         }
-        if (this.isLoading(component)) return;
+        if (LoadingStateManager.isLoading(component, { cssClass: this.cssClasses.disabled })) return;
 
         const url = component.dataset.dislikeUrl;
         await this.toggleRating(component, url, 'dislike');
@@ -171,64 +164,48 @@ class LikesDislikesHandler {
         try {
             this.setLoadingState(component, true);
 
-            const response = await this.sendRequest(url);
-
-            if (isLoginRedirectResponse(response)) {
-                this.handleLogoutDetection(component, response.url);
-                return;
-            }
-
-            if (response.ok) {
-                const data = await response.json();
-                this.updateUI(component, data, type);
-
-                this.broadcastLikeDislikeUpdate(component, data.action, data.likes_count, data.dislikes_count, type);
-
-                this.showFeedback(data.action, type, component);
-            } else {
-                try {
-                    const text = await response.text();
-                    console.warn('Server response (non-OK):', text?.slice(0, 300));
-                } catch (_) {
+            const result = await this.httpClient.handleResponse(
+                await this.httpClient.sendRequest(url),
+                component,
+                {
+                    onLoginRedirect: (loginUrl) => this.handleLogoutDetection(component, loginUrl),
+                    onSuccess: (data) => {
+                        this.updateUI(component, data, type);
+                        this.broadcastLikeDislikeUpdate(component, data.action, data.likes_count, data.dislikes_count, type);
+                        this.showFeedback(data.action, type, component);
+                    },
+                    onError: (error) => {
+                        console.warn('Server response (non-OK):', error.message);
+                        MessageManager.showMessage('Failed to update rating. Please try again.', 'error', component.querySelector(this.selectors.messageContainer), MessageManager.LIKES_CONFIG);
+                    }
                 }
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
+            );
+
         } catch (error) {
             console.error('Rating toggle error:', error);
-            if (isLoginRedirectErrorLike(error)) {
+            if (AuthenticationHandler.isAuthenticationError(error)) {
                 this.handleLogoutDetection(component);
             } else {
-                this.showError('Failed to update rating. Please try again.', component);
+                MessageManager.showMessage('Failed to update rating. Please try again.', 'error', component.querySelector(this.selectors.messageContainer), MessageManager.LIKES_CONFIG);
             }
         } finally {
             this.setLoadingState(component, false);
         }
     }
 
-    async sendRequest(url) {
-        return fetch(url, {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: {
-                'X-CSRFToken': this.csrfToken,
-                'Content-Type': 'application/json',
-            }
-        });
-    }
-
     handleLogoutDetection(component, loginUrl = null) {
-        const productId = component.dataset.productId;
-
-        ComponentFinder.findByProductId(productId, this.selectors.component).forEach(comp => {
-            this.applyUnauthenticatedState(comp);
+        AuthenticationHandler.handleLogoutDetection(component, this.broadcastManager, {
+            loginUrl,
+            messageManager: MessageManager,
+            messageContainer: component.querySelector(this.selectors.messageContainer),
+            productIdGetter: (comp, forBroadcast = false) => {
+                if (forBroadcast) {
+                    return { productId: comp.dataset.productId };
+                }
+                return ComponentFinder.findByProductId(comp.dataset.productId, this.selectors.component);
+            },
+            resetCallback: (comp) => this.applyUnauthenticatedState(comp)
         });
-
-        this.broadcastLogoutDetection(component);
-
-        const message = loginUrl
-            ? `Session expired.`
-            : `Session expired.`;
-        this.showMessage(message, 'info', component);
     }
 
     ensureAuthHintTitles(component) {
@@ -254,8 +231,6 @@ class LikesDislikesHandler {
                 this.animateButton(comp, type);
             }
         });
-
-        this.showFeedback(data.action, type, component);
     }
 
     updateCounts(component, likesCount, dislikesCount) {
@@ -299,28 +274,15 @@ class LikesDislikesHandler {
     }
 
     setLoadingState(component, isLoading) {
-        const buttons = component.querySelectorAll(`${this.selectors.likeButton}, ${this.selectors.dislikeButton}`);
-        buttons.forEach(button => {
-            if (isLoading) {
-                button.classList.add(this.cssClasses.disabled);
-                button.style.pointerEvents = 'none';
-            } else {
-                button.classList.remove(this.cssClasses.disabled);
-                button.style.pointerEvents = '';
-            }
+        LoadingStateManager.setLoadingState(component, isLoading, {
+            selectors: { buttons: `${this.selectors.likeButton}, ${this.selectors.dislikeButton}` },
+            cssClasses: { disabled: this.cssClasses.disabled },
+            disablePointerEvents: true
         });
     }
 
-    isLoading(component) {
-        return component.querySelector(`.${this.cssClasses.disabled}`) !== null;
-    }
-
-    validateAuthentication(component) {
-        return component.dataset.authenticated === 'true';
-    }
-
     showAuthenticationMessage(component) {
-        this.showMessage('Login required', 'info', component);
+        MessageManager.showMessage('Login required', 'info', component.querySelector(this.selectors.messageContainer), MessageManager.LIKES_CONFIG);
     }
 
     showFeedback(action, type, component) {
@@ -330,65 +292,7 @@ class LikesDislikesHandler {
             disliked: '👎 Disliked!',
             undisliked: 'Dislike removed'
         };
-        this.showMessage(messages[action] || `${action} successful`, 'success', component);
-    }
-
-    showError(message, component) {
-        this.showMessage(message, 'error', component);
-    }
-
-    showMessage(message, type, component) {
-        const container = component.querySelector(this.selectors.messageContainer);
-        if (!container) {
-            console.log(`${type.toUpperCase()}: ${message}`);
-            return;
-        }
-
-        container.innerHTML = '';
-        const messageEl = this.createMessageElement(message, type);
-        container.appendChild(messageEl);
-        setTimeout(() => this.removeMessage(messageEl), type === 'error' ? 3000 : 2000);
-        messageEl.addEventListener('click', () => this.removeMessage(messageEl));
-    }
-
-    createMessageElement(message, type) {
-        const messageEl = document.createElement('div');
-
-        const alertClasses = {
-            success: 'bg-success text-white',
-            error: 'bg-danger text-white',
-            info: 'bg-info text-white',
-            warning: 'bg-warning text-dark'
-        };
-        const alertClass = alertClasses[type] || 'bg-info text-white';
-
-        messageEl.className = `${alertClass} rounded px-2 py-1 shadow-sm`;
-        messageEl.style.fontSize = '0.75rem';
-        messageEl.style.cursor = 'pointer';
-        messageEl.style.animation = 'fadeInUp 0.3s ease-out';
-        messageEl.style.whiteSpace = 'nowrap';
-        messageEl.style.userSelect = 'none';
-
-        const icons = {
-            success: 'fas fa-check',
-            error: 'fas fa-times',
-            info: 'fas fa-info',
-            warning: 'fas fa-exclamation'
-        };
-        const icon = icons[type] || icons.info;
-
-        messageEl.innerHTML = `<i class="${icon} me-1"></i>${message}`;
-        return messageEl;
-    }
-
-    removeMessage(messageEl) {
-        if (!messageEl || !messageEl.parentNode) return;
-        messageEl.style.animation = 'fadeOutUp 0.3s ease-in';
-        setTimeout(() => {
-            if (messageEl.parentNode) {
-                messageEl.parentNode.removeChild(messageEl);
-            }
-        }, 300);
+        MessageManager.showMessage(messages[action] || `${action} successful`, 'success', component.querySelector(this.selectors.messageContainer), MessageManager.LIKES_CONFIG);
     }
 
     resetSelectionState(component) {
