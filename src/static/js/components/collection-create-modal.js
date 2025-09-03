@@ -1,4 +1,5 @@
 import {getCookie, isLoginRedirectResponse, isLoginRedirectErrorLike} from '../utils/httpAuth.js';
+import {BroadcastManager, ComponentFinder} from '../utils/broadcastManager.js';
 
 class CollectionCreateModal {
     constructor() {
@@ -25,7 +26,6 @@ class CollectionCreateModal {
         };
 
         this.createUrl = '/favorites/collections/create/';
-
         this.init();
     }
 
@@ -41,28 +41,19 @@ class CollectionCreateModal {
     }
 
     setupBroadcastChannel() {
-        if (typeof BroadcastChannel !== 'undefined') {
-            this.broadcastChannel = new BroadcastChannel('collection-updates');
-            this.broadcastChannel.addEventListener('message', (event) => {
-                this.handleBroadcastMessage(event.data);
-            });
-        }
-    }
+        this.broadcastManager = BroadcastManager.createManager('collection-updates');
 
-    handleBroadcastMessage(data) {
-        if (!data || !data.type) return;
+        this.broadcastManager.subscribe('collection_created', (data) => {
+            this.handleCollectionCreatedMessage(data);
+        });
 
-        switch (data.type) {
-            case 'collection_created':
-                this.handleCollectionCreatedMessage(data);
-                break;
-            case 'collection_updated':
-                this.handleCollectionUpdatedMessage(data);
-                break;
-            case 'logout_detected':
-                this.handleLogoutMessage(data);
-                break;
-        }
+        this.broadcastManager.subscribe('collection_updated', (data) => {
+            this.handleCollectionUpdatedMessage(data);
+        });
+
+        this.broadcastManager.subscribe('logout_detected', (data) => {
+            this.handleLogoutMessage(data);
+        });
     }
 
     handleCollectionCreatedMessage(data) {
@@ -81,7 +72,7 @@ class CollectionCreateModal {
         const {collection} = data;
         if (!collection) return;
 
-        const existingCard = document.querySelector(`[data-collection-id="${collection.id}"]`);
+        const existingCard = ComponentFinder.findByCollectionId(collection.id, '[data-collection-id]')[0];
         if (existingCard) {
             this.updateExistingCollectionCard(existingCard, collection);
         }
@@ -93,26 +84,13 @@ class CollectionCreateModal {
     }
 
     broadcastCollectionCreated(collection) {
-        if (!this.broadcastChannel) return;
-
-        const message = {
-            type: 'collection_created',
-            collection: collection,
-            timestamp: Date.now()
-        };
-
-        this.broadcastChannel.postMessage(message);
+        this.broadcastManager.broadcast('collection_created', {
+            collection: collection
+        });
     }
 
     broadcastLogoutDetection() {
-        if (!this.broadcastChannel) return;
-
-        const message = {
-            type: 'logout_detected',
-            timestamp: Date.now()
-        };
-
-        this.broadcastChannel.postMessage(message);
+        this.broadcastManager.broadcast('logout_detected', {});
     }
 
     setupModal() {
@@ -164,9 +142,7 @@ class CollectionCreateModal {
         });
 
         window.addEventListener('beforeunload', () => {
-            if (this.broadcastChannel) {
-                this.broadcastChannel.close();
-            }
+            this.broadcastManager?.close();
         });
     }
 
@@ -247,7 +223,6 @@ class CollectionCreateModal {
 
     getFormData() {
         const form = this.modal.querySelector(this.selectors.form);
-
         const isEmptyState = !!document.querySelector(this.selectors.emptyState);
 
         return {
@@ -295,18 +270,65 @@ class CollectionCreateModal {
         }
     }
 
+    sortCollectionCards() {
+        const grid = document.querySelector(this.selectors.collectionsGrid);
+        if (!grid) return;
+
+        const cards = Array.from(grid.querySelectorAll('[data-collection-id]'));
+        if (cards.length <= 1) return;
+
+        cards.sort((a, b) => {
+            const aIsDefault = this.getCollectionIsDefault(a);
+            const bIsDefault = this.getCollectionIsDefault(b);
+            const aUpdatedAt = this.getCollectionUpdatedAt(a);
+            const bUpdatedAt = this.getCollectionUpdatedAt(b);
+
+            if (aIsDefault !== bIsDefault) {
+                return bIsDefault - aIsDefault;
+            }
+
+            return new Date(bUpdatedAt) - new Date(aUpdatedAt);
+        });
+
+        cards.forEach(card => {
+            grid.appendChild(card);
+        });
+    }
+
+    getCollectionIsDefault(cardElement) {
+        const titleElement = cardElement.querySelector('.collection-title');
+        if (!titleElement) return false;
+
+        const badge = titleElement.querySelector('.badge');
+        return badge && badge.textContent.trim() === 'Default';
+    }
+
+    getCollectionUpdatedAt(cardElement) {
+        const updatedElement = cardElement.querySelector('.collection-footer small');
+        if (!updatedElement) return new Date().toISOString();
+
+        const text = updatedElement.textContent;
+        const match = text.match(/Updated: (.+)/);
+        if (match && match[1] !== 'Now') {
+            try {
+                return new Date(match[1]).toISOString();
+            } catch (e) {
+                return new Date().toISOString();
+            }
+        }
+
+        return new Date().toISOString();
+    }
+
     addCollectionToGrid(collection) {
         const emptyState = document.querySelector(this.selectors.emptyState);
 
         if (emptyState) {
             const grid = this.buildGridContainer();
-
             grid.classList.add('mb-5');
-
             emptyState.replaceWith(grid);
 
             const cardHTML = this.renderCollectionCard(collection);
-
             if (cardHTML) {
                 grid.insertAdjacentHTML('beforeend', cardHTML);
                 const newCard = grid.lastElementChild;
@@ -318,21 +340,64 @@ class CollectionCreateModal {
         this.ensureGridExists();
 
         const grid = document.querySelector(this.selectors.collectionsGrid);
-
         if (!grid) return;
+
+        if (collection.is_default) {
+            this.removeDefaultBadgeFromAllCollections();
+        }
 
         const cardHTML = this.renderCollectionCard(collection);
 
         if (cardHTML) {
-            const existingCard = grid.querySelector(`[data-collection-id="${collection.id}"]`);
+            const existingCard = ComponentFinder.findByCollectionId(collection.id, '[data-collection-id]')[0];
             if (existingCard) {
                 this.updateExistingCollectionCard(existingCard, collection);
+                this.sortCollectionCards();
                 return;
             }
 
             grid.insertAdjacentHTML('beforeend', cardHTML);
             const newCard = grid.lastElementChild;
+
+            this.sortCollectionCards();
             this.animateNewCard(newCard);
+        }
+    }
+
+    removeDefaultBadgeFromAllCollections() {
+        const allCollectionCards = document.querySelectorAll('[data-collection-id]');
+
+        allCollectionCards.forEach(card => {
+            const titleElement = card.querySelector('.collection-title');
+            if (titleElement) {
+                const badge = titleElement.querySelector('.badge');
+                if (badge && badge.textContent.trim() === 'Default') {
+                    badge.remove();
+                }
+            }
+        });
+    }
+
+    updateCollectionTitle(titleElement, collection) {
+        if (!titleElement) return;
+
+        const existingBadge = titleElement.querySelector('.badge');
+        if (existingBadge) {
+            existingBadge.remove();
+        }
+
+        const titleText = titleElement.childNodes[0];
+        if (titleText) {
+            titleText.textContent = collection.name;
+        } else {
+            titleElement.innerHTML = this.escapeHtml(collection.name);
+        }
+
+        if (collection.is_default) {
+            const badge = document.createElement('span');
+            badge.className = 'badge bg-primary ms-2';
+            badge.textContent = 'Default';
+            titleElement.appendChild(badge);
         }
     }
 
@@ -342,13 +407,7 @@ class CollectionCreateModal {
         cardElement.setAttribute('data-collection-id', collection.id);
 
         const titleElement = cardElement.querySelector('.collection-title');
-        if (titleElement) {
-            titleElement.innerHTML = this.escapeHtml(collection.name);
-
-            if (collection.is_default) {
-                titleElement.innerHTML += '<span class="badge bg-primary ms-2">Default</span>';
-            }
-        }
+        this.updateCollectionTitle(titleElement, collection);
 
         const itemsCountElement = cardElement.querySelector('.collection-items-count');
         if (itemsCountElement) {
@@ -425,26 +484,7 @@ class CollectionCreateModal {
         clonedCard.setAttribute('data-collection-id', collection.id);
 
         const titleElement = clonedCard.querySelector('.collection-title');
-        if (titleElement) {
-            const existingBadge = titleElement.querySelector('.badge');
-            if (existingBadge) {
-                existingBadge.remove();
-            }
-
-            const titleText = titleElement.childNodes[0];
-            if (titleText) {
-                titleText.textContent = collection.name;
-            } else {
-                titleElement.innerHTML = this.escapeHtml(collection.name);
-            }
-
-            if (collection.is_default) {
-                const badge = document.createElement('span');
-                badge.className = 'badge bg-primary ms-2';
-                badge.textContent = 'Default';
-                titleElement.appendChild(badge);
-            }
-        }
+        this.updateCollectionTitle(titleElement, collection);
 
         const itemsCountElement = clonedCard.querySelector('.collection-items-count');
         if (itemsCountElement) {

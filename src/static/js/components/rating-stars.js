@@ -1,4 +1,5 @@
-import {getCookie, isLoginRedirectResponse, isLoginRedirectErrorLike} from '../utils/httpAuth.js';
+import { getCookie, isLoginRedirectResponse, isLoginRedirectErrorLike } from '../utils/httpAuth.js';
+import { BroadcastManager, ComponentFinder } from '../utils/broadcastManager.js';
 
 class RatingStarsHandler {
     constructor() {
@@ -30,28 +31,19 @@ class RatingStarsHandler {
     }
 
     setupBroadcastChannel() {
-        if (typeof BroadcastChannel !== 'undefined') {
-            this.broadcastChannel = new BroadcastChannel('rating-updates');
-            this.broadcastChannel.addEventListener('message', (event) => {
-                this.handleBroadcastMessage(event.data);
-            });
-        }
-    }
+        this.broadcastManager = BroadcastManager.createManager('rating-updates');
 
-    handleBroadcastMessage(data) {
-        if (!data || !data.type) return;
+        this.broadcastManager.subscribe('rating_updated', (data) => {
+            this.handleRatingUpdateMessage(data);
+        });
 
-        switch (data.type) {
-            case 'rating_updated':
-                this.handleRatingUpdateMessage(data);
-                break;
-            case 'rating_removed':
-                this.handleRatingRemoveMessage(data);
-                break;
-            case 'logout_detected':
-                this.handleLogoutMessage(data);
-                break;
-        }
+        this.broadcastManager.subscribe('rating_removed', (data) => {
+            this.handleRatingRemoveMessage(data);
+        });
+
+        this.broadcastManager.subscribe('logout_detected', (data) => {
+            this.handleLogoutMessage(data);
+        });
     }
 
     handleRatingUpdateMessage(data) {
@@ -94,54 +86,36 @@ class RatingStarsHandler {
 
     findComponentsForUpdate(productId, ratingUrl) {
         if (productId && productId.trim()) {
-            return this.getSameProductComponents(productId);
+            return ComponentFinder.findByProductId(productId, this.selectors.component);
         } else if (ratingUrl) {
-            return this.getComponentsByRatingUrl(ratingUrl);
+            return ComponentFinder.findByUrl(ratingUrl, this.selectors.component, 'ratingUrl');
         } else {
             return [];
         }
     }
 
     broadcastRatingUpdate(component, userScore, serverStats) {
-        if (!this.broadcastChannel) return;
-
-        const message = {
-            type: 'rating_updated',
+        this.broadcastManager.broadcast('rating_updated', {
             productId: component.dataset.productId,
             ratingUrl: component.dataset.ratingUrl,
             userScore: userScore,
-            serverStats: serverStats,
-            timestamp: Date.now()
-        };
-
-        this.broadcastChannel.postMessage(message);
+            serverStats: serverStats
+        });
     }
 
     broadcastRatingRemove(component, serverStats) {
-        if (!this.broadcastChannel) return;
-
-        const message = {
-            type: 'rating_removed',
+        this.broadcastManager.broadcast('rating_removed', {
             productId: component.dataset.productId,
             ratingUrl: component.dataset.ratingUrl,
-            serverStats: serverStats,
-            timestamp: Date.now()
-        };
-
-        this.broadcastChannel.postMessage(message);
+            serverStats: serverStats
+        });
     }
 
     broadcastLogoutDetection(component) {
-        if (!this.broadcastChannel) return;
-
-        const message = {
-            type: 'logout_detected',
+        this.broadcastManager.broadcast('logout_detected', {
             productId: component.dataset.productId,
-            ratingUrl: component.dataset.ratingUrl,
-            timestamp: Date.now()
-        };
-
-        this.broadcastChannel.postMessage(message);
+            ratingUrl: component.dataset.ratingUrl
+        });
     }
 
     bindEvents() {
@@ -183,9 +157,7 @@ class RatingStarsHandler {
         });
 
         window.addEventListener('beforeunload', () => {
-            if (this.broadcastChannel) {
-                this.broadcastChannel.close();
-            }
+            this.broadcastManager?.close();
         });
     }
 
@@ -330,24 +302,12 @@ class RatingStarsHandler {
         const ratingUrl = sourceComponent.dataset.ratingUrl;
 
         if (productId && productId.trim()) {
-            return this.getSameProductComponents(productId);
+            return ComponentFinder.findByProductId(productId, this.selectors.component);
         } else if (ratingUrl) {
-            return this.getComponentsByRatingUrl(ratingUrl);
+            return ComponentFinder.findByUrl(ratingUrl, this.selectors.component, 'ratingUrl');
         } else {
             return [sourceComponent];
         }
-    }
-
-    getSameProductComponents(productId) {
-        if (!productId || !productId.trim()) return [];
-        return Array.from(document.querySelectorAll(this.selectors.component))
-            .filter(component => component.dataset.productId === productId);
-    }
-
-    getComponentsByRatingUrl(ratingUrl) {
-        if (!ratingUrl) return [];
-        return Array.from(document.querySelectorAll(this.selectors.component))
-            .filter(component => component.dataset.ratingUrl === ratingUrl);
     }
 
     handleLogoutDetection(component, loginUrl = null) {
@@ -365,7 +325,6 @@ class RatingStarsHandler {
         const message = loginUrl ? 'Session expired.' : 'Session expired.';
         this.showMessage(message, 'warning', component);
     }
-
 
     updateContainerTitle(component) {
         const starsContainer = component.querySelector(this.selectors.starsContainer);

@@ -1,4 +1,5 @@
-import {getCookie, isLoginRedirectResponse, isLoginRedirectErrorLike} from '../utils/httpAuth.js'
+import { getCookie, isLoginRedirectResponse, isLoginRedirectErrorLike } from '../utils/httpAuth.js';
+import { BroadcastManager, ComponentFinder } from '../utils/broadcastManager.js';
 
 class LikesDislikesHandler {
     constructor() {
@@ -38,29 +39,19 @@ class LikesDislikesHandler {
     }
 
     setupBroadcastChannel() {
-        if (typeof BroadcastChannel !== 'undefined') {
-            this.broadcastChannel = new BroadcastChannel('likes-dislikes-updates');
-            this.broadcastChannel.addEventListener('message', (event) => {
-                this.handleBroadcastMessage(event.data);
-            });
-        }
-    }
+        this.broadcastManager = BroadcastManager.createManager('likes-dislikes-updates');
 
-    handleBroadcastMessage(data) {
-        if (!data || !data.type) return;
+        this.broadcastManager.subscribe('like_dislike_updated', (data) => {
+            this.handleLikeDislikeUpdateMessage(data);
+        });
 
-        switch (data.type) {
-            case 'like_dislike_updated':
-                this.handleLikeDislikeUpdateMessage(data);
-                break;
-            case 'logout_detected':
-                this.handleLogoutMessage(data);
-                break;
-        }
+        this.broadcastManager.subscribe('logout_detected', (data) => {
+            this.handleLogoutMessage(data);
+        });
     }
 
     handleLikeDislikeUpdateMessage(data) {
-        const {productId, action, likesCount, dislikesCount} = data;
+        const { productId, action, likesCount, dislikesCount } = data;
         const componentsToUpdate = this.findComponentsForUpdate(productId);
 
         componentsToUpdate.forEach(comp => {
@@ -81,7 +72,7 @@ class LikesDislikesHandler {
     }
 
     handleLogoutMessage(data) {
-        const {productId} = data;
+        const { productId } = data;
         const componentsToUpdate = this.findComponentsForUpdate(productId);
 
         componentsToUpdate.forEach(comp => {
@@ -91,38 +82,26 @@ class LikesDislikesHandler {
 
     findComponentsForUpdate(productId) {
         if (productId && productId.trim()) {
-            return this.getSameProductComponents(productId);
+            return ComponentFinder.findByProductId(productId, this.selectors.component);
         } else {
             return [];
         }
     }
 
     broadcastLikeDislikeUpdate(component, action, likesCount, dislikesCount, type) {
-        if (!this.broadcastChannel) return;
-
-        const message = {
-            type: 'like_dislike_updated',
+        this.broadcastManager.broadcast('like_dislike_updated', {
             productId: component.dataset.productId,
             action: action,
             likesCount: likesCount,
             dislikesCount: dislikesCount,
-            interactionType: type,
-            timestamp: Date.now()
-        };
-
-        this.broadcastChannel.postMessage(message);
+            interactionType: type
+        });
     }
 
     broadcastLogoutDetection(component) {
-        if (!this.broadcastChannel) return;
-
-        const message = {
-            type: 'logout_detected',
-            productId: component.dataset.productId,
-            timestamp: Date.now()
-        };
-
-        this.broadcastChannel.postMessage(message);
+        this.broadcastManager.broadcast('logout_detected', {
+            productId: component.dataset.productId
+        });
     }
 
     setupAuthUI() {
@@ -158,9 +137,7 @@ class LikesDislikesHandler {
         });
 
         window.addEventListener('beforeunload', () => {
-            if (this.broadcastChannel) {
-                this.broadcastChannel.close();
-            }
+            this.broadcastManager?.close();
         });
     }
 
@@ -242,7 +219,7 @@ class LikesDislikesHandler {
     handleLogoutDetection(component, loginUrl = null) {
         const productId = component.dataset.productId;
 
-        this.getSameProductComponents(productId).forEach(comp => {
+        ComponentFinder.findByProductId(productId, this.selectors.component).forEach(comp => {
             this.applyUnauthenticatedState(comp);
         });
 
@@ -269,7 +246,7 @@ class LikesDislikesHandler {
     updateUI(component, data, type) {
         const productId = component.dataset.productId;
 
-        this.getSameProductComponents(productId).forEach(comp => {
+        ComponentFinder.findByProductId(productId, this.selectors.component).forEach(comp => {
             this.updateCounts(comp, data.likes_count, data.dislikes_count);
             this.updateButtonStates(comp, data.action, type);
 
@@ -279,13 +256,6 @@ class LikesDislikesHandler {
         });
 
         this.showFeedback(data.action, type, component);
-    }
-
-    getSameProductComponents(productId) {
-        if (!productId) return [];
-
-        return Array.from(document.querySelectorAll(this.selectors.component))
-            .filter(component => component.dataset.productId === productId);
     }
 
     updateCounts(component, likesCount, dislikesCount) {

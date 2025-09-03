@@ -117,6 +117,15 @@ class FavoriteCollectionCreateView(LoginRequiredMixin, View):
 
         try:
             with transaction.atomic():
+                if is_default:
+                    FavoriteCollection.objects.filter(
+                        user=request.user,
+                        is_default=True
+                    ).update(is_default=False)
+
+                if not FavoriteCollection.objects.filter(user=request.user).exists():
+                    is_default = True
+
                 collection = FavoriteCollection.objects.create(
                     user=request.user,
                     name=name,
@@ -124,6 +133,7 @@ class FavoriteCollectionCreateView(LoginRequiredMixin, View):
                     is_public=is_public,
                     is_default=is_default
                 )
+
         except IntegrityError as e:
             error_message = str(e).lower()
             if 'unique constraint' in error_message and 'name' in error_message:
