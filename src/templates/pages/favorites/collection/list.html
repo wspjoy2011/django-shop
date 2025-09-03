@@ -92,7 +92,7 @@
   <!-- Hidden template for JavaScript (only needed when no collections exist) -->
   {% if not has_collections %}
     <script type="text/template" id="collection-card-template">
-      {% include 'components/favorites/collection_card.html' with collection=template_collection %}
+      {% include 'components/favorites/collection_card_empty_template.html' %}
     </script>
   {% endif %}
 
