@@ -85,6 +85,20 @@ seed-all: ## Populate database with all test data (users, catalog, inventories, 
 	@echo "Database seeding completed!"
 	@echo "========================================="
 
+create-admin: ## Create Django admin superuser using environment variables
+	@echo "========================================="
+	@echo "Django Admin User Creation"
+	@echo "========================================="
+	@echo "Starting database..."
+	@docker compose --env-file $(ENV_FILE) up -d --wait --wait-timeout 60 db
+	@echo "Creating Django admin user..."
+	@docker compose --env-file $(ENV_FILE) run --rm -e USE_PGBOUNCER=false web create-admin.sh
+	@echo "Stopping database..."
+	@docker compose --env-file $(ENV_FILE) stop db
+	@echo "========================================="
+	@echo "Admin user creation completed!"
+	@echo "========================================="
+
 clean-all: ## Remove all test data from database (favorites, ratings, inventories, catalog, users)
 	@echo "========================================="
 	@echo "Database Full Cleanup Process"

@@ -43,7 +43,7 @@ class FavoriteToggleView(LoginRequiredMixin, View):
 
 class FavoriteCollectionListView(LoginRequiredMixin, ListView):
     model = FavoriteCollection
-    template_name = 'pages/favorites/collection_list.html'
+    template_name = 'pages/favorites/collection/list.html'
     context_object_name = 'collections'
     paginate_by = 12
 

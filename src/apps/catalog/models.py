@@ -112,9 +112,6 @@ class Product(models.Model):
         blank=True,
     )
 
-    # rating_sum = models.IntegerField(default=0)
-    # rating_qty = models.IntegerField(default=0)
-
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

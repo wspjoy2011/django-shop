@@ -218,3 +218,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # User model
 
 AUTH_USER_MODEL = 'accounts.User'
+
+# Settings for creating Django admin superuser
+
+ADMIN_USERNAME = os.getenv('ADMIN_USERNAME')
+ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD')
+ADMIN_EMAIL = os.getenv('ADMIN_EMAIL')
