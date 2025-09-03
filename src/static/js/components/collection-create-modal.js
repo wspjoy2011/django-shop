@@ -37,8 +37,8 @@ class CollectionCreateModal extends BaseComponent {
     }
 
     init() {
-        super.init();
         this.setupModal();
+        super.init();
     }
 
     setupBroadcastSubscriptions() {

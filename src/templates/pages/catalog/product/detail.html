@@ -27,7 +27,7 @@
 
     <!-- Admin Floating Toolbar -->
     {% if request.user.is_authenticated and request.user.is_staff %}
-      <div class="admin-toolbar position-fixed" style="top: 20px; right: 20px; z-index: 1000;">
+      <div class="admin-toolbar position-fixed" style="top: 20px; right: 20px; z-index: 1200;">
         <div class="btn-group-vertical shadow">
           <a href="{% url 'catalog:product_update' slug=product.slug %}"
              class="btn btn-warning btn-sm"

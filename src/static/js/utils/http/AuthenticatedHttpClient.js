@@ -1,4 +1,4 @@
-import { getCookie, isLoginRedirectResponse, isLoginRedirectErrorLike } from '../httpAuth.js';
+import {getCookie, isLoginRedirectResponse, isLoginRedirectErrorLike} from '../httpAuth.js';
 
 export class AuthenticatedHttpClient {
     constructor(csrfToken = null) {
@@ -61,17 +61,23 @@ export class AuthenticatedHttpClient {
 
         if (isLoginRedirectResponse(response)) {
             if (onLoginRedirect) onLoginRedirect(response.url);
-            return { isLoginRedirect: true, url: response.url };
+            return {isLoginRedirect: true, url: response.url};
         }
 
+        const data = await response.json().catch(() => null);
+
         if (response.ok) {
-            const data = await response.json().catch(() => ({}));
             if (onSuccess) onSuccess(data);
-            return { success: true, data };
+            return {success: true, data};
         } else {
-            const error = new Error(`HTTP ${response.status}: ${response.statusText}`);
-            if (onError) onError(error);
-            return { success: false, error };
+            if (data && onSuccess) {
+                onSuccess(data);
+                return {success: false, data};
+            } else {
+                const error = new Error(`HTTP ${response.status}: ${response.statusText}`);
+                if (onError) onError(error);
+                return {success: false, error};
+            }
         }
     }
 

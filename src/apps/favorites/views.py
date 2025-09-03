@@ -115,6 +115,14 @@ class FavoriteCollectionCreateView(LoginRequiredMixin, View):
                 'errors': errors
             }, status=400)
 
+        if FavoriteCollection.objects.filter(user=request.user, name=name).exists():
+            return JsonResponse({
+                'success': False,
+                'errors': {
+                    'name': ['A collection with this name already exists']
+                }
+            }, status=400)
+
         try:
             with transaction.atomic():
                 if is_default:
@@ -134,16 +142,7 @@ class FavoriteCollectionCreateView(LoginRequiredMixin, View):
                     is_default=is_default
                 )
 
-        except IntegrityError as e:
-            error_message = str(e).lower()
-            if 'unique constraint' in error_message and 'name' in error_message:
-                return JsonResponse({
-                    'success': False,
-                    'errors': {
-                        'name': ['A collection with this name already exists']
-                    }
-                }, status=400)
-            else:
+        except IntegrityError:
                 return JsonResponse({
                     'success': False,
                     'errors': {
@@ -170,3 +169,35 @@ class FavoriteCollectionCreateView(LoginRequiredMixin, View):
         }
 
         return JsonResponse(response_data, status=201)
+
+
+class FavoriteCollectionSetDefaultView(LoginRequiredMixin, View):
+
+    def post(self, request, collection_id):
+        collection = FavoriteCollection.objects.filter(id=collection_id, user=request.user).first()
+
+        if not collection:
+            return JsonResponse({
+                'success': False,
+                'message': 'Collection is not found'
+            }, status=404)
+
+        if collection.is_default:
+            return JsonResponse({
+                'success': False,
+                'message': 'This collection is already set as default'
+            }, status=200)
+
+        with transaction.atomic():
+            FavoriteCollection.objects.filter(
+                user=request.user,
+                is_default=True
+            ).update(is_default=False)
+
+            collection.is_default = True
+            collection.save()
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Collection "{collection.name}" is now set as default'
+        }, status=201)
