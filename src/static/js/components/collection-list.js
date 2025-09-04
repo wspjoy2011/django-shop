@@ -22,7 +22,8 @@ class CollectionList extends BaseComponent {
             errorContainer: '.form-errors',
             loadingSpinner: '.loading-spinner',
             collectionsGrid: '#collections-grid',
-            emptyState: '.empty-state'
+            emptyState: '.empty-state',
+            setDefaultButton: '.set-default-btn'
         };
 
         this.cssClasses = {
@@ -32,6 +33,7 @@ class CollectionList extends BaseComponent {
         };
 
         this.createUrl = '/favorites/collections/create/';
+        this.setDefaultUrl = '/favorites/collections/{id}/set-default/';
         this.httpClient = new AuthenticatedHttpClient();
         this.init();
     }
@@ -42,17 +44,10 @@ class CollectionList extends BaseComponent {
     }
 
     setupBroadcastSubscriptions() {
-        this.broadcastManager.subscribe('collection_created', (data) => {
-            this.handleCollectionCreatedMessage(data);
-        });
-
-        this.broadcastManager.subscribe('collection_updated', (data) => {
-            this.handleCollectionUpdatedMessage(data);
-        });
-
-        this.broadcastManager.subscribe('logout_detected', (data) => {
-            this.handleLogoutMessage(data);
-        });
+        this.broadcastManager.subscribe('collection_created', this.handleCollectionCreatedMessage.bind(this));
+        this.broadcastManager.subscribe('collection_updated', this.handleCollectionUpdatedMessage.bind(this));
+        this.broadcastManager.subscribe('default_collection_set', this.handleDefaultCollectionSetMessage.bind(this));
+        this.broadcastManager.subscribe('logout_detected', this.handleLogoutMessage.bind(this));
     }
 
     handleCollectionCreatedMessage(data) {
@@ -71,9 +66,17 @@ class CollectionList extends BaseComponent {
         const {collection} = data;
         if (!collection) return;
 
-        const existingCard = ComponentFinder.findByCollectionId(collection.id, '[data-collection-id]')[0];
+        const existingCard = ComponentFinder.findByCollectionId(collection.id, 'div[data-collection-id]')[0];
         if (existingCard) {
             this.updateExistingCollectionCard(existingCard, collection);
+        }
+    }
+
+    handleDefaultCollectionSetMessage(data) {
+        const {newDefaultId} = data;
+        if (newDefaultId) {
+            this.updateAllCollectionsAfterDefaultChange(newDefaultId);
+            this.sortCollectionCards();
         }
     }
 
@@ -85,6 +88,12 @@ class CollectionList extends BaseComponent {
     broadcastCollectionCreated(collection) {
         this.broadcastManager.broadcast('collection_created', {
             collection: collection
+        });
+    }
+
+    broadcastCollectionDefaultSet(collectionId) {
+        this.broadcastManager.broadcast('default_collection_set', {
+            newDefaultId: collectionId
         });
     }
 
@@ -100,9 +109,16 @@ class CollectionList extends BaseComponent {
         super.bindEvents();
 
         document.addEventListener('click', (e) => {
+            const setDefaultButton = e.target.closest(this.selectors.setDefaultButton);
             if (e.target.closest(this.selectors.createButton)) {
                 e.preventDefault();
                 this.openModal();
+            } else if (setDefaultButton) {
+                e.preventDefault();
+                const collectionId = setDefaultButton.getAttribute('data-collection-id');
+                if (collectionId) {
+                    void this.handleSetDefaultCollection(collectionId, setDefaultButton);
+                }
             }
         });
 
@@ -139,192 +155,107 @@ class CollectionList extends BaseComponent {
         });
     }
 
-    openModal() {
-        if (!this.modal) return;
+    async handleSetDefaultCollection(collectionId, button) {
+        const url = this.setDefaultUrl.replace('{id}', collectionId);
+        const originalIcon = button.querySelector('i');
+        const originalClass = originalIcon.className;
 
-        this.modal.classList.remove(this.cssClasses.hidden);
-        document.body.classList.add(this.cssClasses.modalOpen);
-
-        this.clearForm();
-        this.clearMessages();
-
-        const form = this.modal.querySelector(this.selectors.form);
-        const isEmptyState = !!document.querySelector(this.selectors.emptyState);
-        if (form && form.is_default) {
-            if (isEmptyState) {
-                form.is_default.checked = true;
-                form.is_default.disabled = true;
-            } else {
-                form.is_default.disabled = false;
-            }
-        }
-
-        setTimeout(() => {
-            this.modal.querySelector(this.selectors.nameInput)?.focus();
-        }, 100);
-    }
-
-    closeModal() {
-        if (!this.modal) return;
-
-        this.modal.classList.add(this.cssClasses.hidden);
-        document.body.classList.remove(this.cssClasses.modalOpen);
-
-        this.clearForm();
-        this.clearMessages();
-    }
-
-    async handleFormSubmit() {
-        const formData = this.getFormData();
-
-        this.clearMessages();
-        this.setLoadingState(true);
+        originalIcon.className = 'fas fa-spinner fa-spin text-muted';
+        button.disabled = true;
 
         try {
-            const result = await this.httpClient.handleResponse(
-                await this.httpClient.sendJSON(this.createUrl, formData),
+            await this.httpClient.handleResponse(
+                await this.httpClient.sendJSON(url, {}),
                 null,
                 {
                     onLoginRedirect: (loginUrl) => this.handleLogoutDetection(loginUrl),
                     onSuccess: (data) => {
                         if (data.success) {
-                            this.handleSuccess(data.collection);
+                            this.handleSetDefaultSuccess(collectionId, data.message);
                         } else {
-                            this.handleErrors(data.errors || {non_field_errors: ['Unknown error occurred']});
+                            MessageManager.showGlobalMessage(data.message || 'Failed to set collection as default', 'error');
                         }
                     },
-                    onError: () => {
-                        this.handleErrors({non_field_errors: ['Network error. Please try again.']});
+                    onError: (error) => {
+                        MessageManager.showGlobalMessage('Network error. Please try again.', 'error');
                     }
                 }
             );
-
         } catch (error) {
             if (AuthenticationHandler.isAuthenticationError(error)) {
                 this.handleLogoutDetection();
             } else {
-                this.handleErrors({non_field_errors: ['Network error. Please try again.']});
+                MessageManager.showGlobalMessage('Network error. Please try again.', 'error');
             }
         } finally {
-            this.setLoadingState(false);
+            originalIcon.className = originalClass;
+            button.disabled = false;
         }
     }
 
-    handleLogoutDetection(loginUrl = null) {
-        this.broadcastManager.broadcast('logout_detected', {});
-        this.closeModal();
-
-        const message = loginUrl ? 'Session expired.' : 'Session expired. Please log in again.';
-        MessageManager.showGlobalMessage(message, 'warning');
+    handleSetDefaultSuccess(collectionId, message) {
+        this.updateAllCollectionsAfterDefaultChange(collectionId);
+        this.sortCollectionCards();
+        MessageManager.showGlobalMessage(message, 'success');
+        this.broadcastCollectionDefaultSet(collectionId);
     }
 
-    getFormData() {
-        const form = this.modal.querySelector(this.selectors.form);
-        const isEmptyState = !!document.querySelector(this.selectors.emptyState);
+    updateAllCollectionsAfterDefaultChange(newDefaultCollectionId) {
+        const allCollectionCards = document.querySelectorAll('div[data-collection-id]');
 
-        return {
-            name: form.name.value.trim(),
-            description: form.description.value.trim(),
-            is_public: form.is_public.checked,
-            is_default: isEmptyState ? true : form.is_default.checked
-        };
-    }
+        allCollectionCards.forEach(card => {
+            const cardId = card.getAttribute('data-collection-id');
+            const titleElement = card.querySelector('.collection-title');
 
-    handleSuccess(collection) {
-        this.showSuccessMessage('Collection created successfully!');
-        this.broadcastCollectionCreated(collection);
-        this.addCollectionToGrid(collection);
-
-        setTimeout(() => {
-            this.closeModal();
-        }, 1500);
-    }
-
-    handleErrors(errors) {
-        Object.keys(errors).forEach((field) => {
-            const fieldError = this.modal.querySelector(`[data-field="${field}"]`);
-
-            if (fieldError) {
-                fieldError.textContent = errors[field][0];
-                fieldError.classList.add(this.cssClasses.show);
-            }
-        });
-
-        if (errors.non_field_errors) {
-            this.showErrorMessage(errors.non_field_errors[0]);
-        }
-    }
-
-    setLoadingState(isLoading) {
-        LoadingStateManager.setModalLoadingState(this.modal, isLoading, this.selectors, this.cssClasses);
-    }
-
-    showSuccessMessage(message) {
-        const errorContainer = this.modal?.querySelector(this.selectors.errorContainer);
-
-        if (errorContainer) {
-            errorContainer.className = 'form-errors success';
-            errorContainer.innerHTML = `<i class="fas fa-check me-1"></i>${MessageManager.escapeHtml(message)}`;
-        }
-    }
-
-    showErrorMessage(message) {
-        const errorContainer = this.modal?.querySelector(this.selectors.errorContainer);
-
-        if (errorContainer) {
-            errorContainer.className = 'form-errors error';
-            errorContainer.innerHTML = `<i class="fas fa-exclamation-triangle me-1"></i>${MessageManager.escapeHtml(message)}`;
-        }
-    }
-
-    sortCollectionCards() {
-        const grid = document.querySelector(this.selectors.collectionsGrid);
-        if (!grid) return;
-
-        const cards = Array.from(grid.querySelectorAll('[data-collection-id]'));
-        if (cards.length <= 1) return;
-
-        cards.sort((a, b) => {
-            const aIsDefault = this.getCollectionIsDefault(a);
-            const bIsDefault = this.getCollectionIsDefault(b);
-            const aUpdatedAt = this.getCollectionUpdatedAt(a);
-            const bUpdatedAt = this.getCollectionUpdatedAt(b);
-
-            if (aIsDefault !== bIsDefault) {
-                return bIsDefault - aIsDefault;
+            if (!titleElement) {
+                return;
             }
 
-            return new Date(bUpdatedAt) - new Date(aUpdatedAt);
+            const collectionName = this.getCollectionNameFromTitle(titleElement);
+            this.rebuildCollectionTitle(titleElement, cardId, cardId === newDefaultCollectionId, collectionName);
         });
 
-        cards.forEach(card => {
-            grid.appendChild(card);
-        });
+        this.removeOrphanSetDefaultButtons();
     }
 
-    getCollectionIsDefault(cardElement) {
-        const titleElement = cardElement.querySelector('.collection-title');
-        if (!titleElement) return false;
+    rebuildCollectionTitle(titleElement, collectionId, isDefault, collectionName) {
+        if (!titleElement) return;
 
-        const badge = titleElement.querySelector('.badge');
-        return badge && badge.textContent.trim() === 'Default';
-    }
-
-    getCollectionUpdatedAt(cardElement) {
-        const updatedElement = cardElement.querySelector('.collection-footer small');
-        if (!updatedElement) return new Date().toISOString();
-
-        const text = updatedElement.textContent;
-        const match = text.match(/Updated: (.+)/);
-        if (match && match[1] !== 'Now') {
-            try {
-                return new Date(match[1]).toISOString();
-            } catch (e) {
-                return new Date().toISOString();
-            }
+        while (titleElement.firstChild) {
+            titleElement.removeChild(titleElement.firstChild);
         }
 
-        return new Date().toISOString();
+        titleElement.appendChild(document.createTextNode(collectionName.trim() + ' '));
+
+        if (isDefault) {
+            const badge = document.createElement('span');
+            badge.className = 'badge bg-primary ms-2';
+            badge.textContent = 'Default';
+            titleElement.appendChild(badge);
+        } else {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'btn btn-link p-0 ms-2 set-default-btn';
+            button.setAttribute('data-collection-id', String(collectionId));
+            button.title = 'Set as default collection';
+
+            const icon = document.createElement('i');
+            icon.className = 'fas fa-star text-muted';
+            button.appendChild(icon);
+
+            titleElement.appendChild(button);
+        }
+    }
+
+    getCollectionNameFromTitle(titleElement) {
+        if (!titleElement) return '';
+
+        for (const node of titleElement.childNodes) {
+            if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) {
+                return node.textContent.trim();
+            }
+        }
+        return titleElement.textContent.replace(/Default/g, '').trim();
     }
 
     addCollectionToGrid(collection) {
@@ -335,39 +266,40 @@ class CollectionList extends BaseComponent {
             grid.classList.add('mb-5');
             emptyState.replaceWith(grid);
 
-            const cardHTML = this.renderCollectionCard(collection);
-            if (cardHTML) {
-                grid.insertAdjacentHTML('beforeend', cardHTML);
-                const newCard = grid.lastElementChild;
+            const newCard = this.renderCollectionCard(collection);
+            if (newCard) {
+                grid.appendChild(newCard);
                 this.animateNewCard(newCard);
             }
+            this.removeOrphanSetDefaultButtons();
             return;
         }
 
         this.ensureGridExists();
 
         const grid = document.querySelector(this.selectors.collectionsGrid);
-        if (!grid) return;
+        if (!grid) {
+            return;
+        }
 
         if (collection.is_default) {
             this.removeDefaultBadgeFromAllCollections();
         }
 
-        const cardHTML = this.renderCollectionCard(collection);
+        const existingCard = ComponentFinder.findByCollectionId(collection.id, 'div[data-collection-id]')[0];
+        if (existingCard) {
+            this.updateExistingCollectionCard(existingCard, collection);
+            this.sortCollectionCards();
+            this.removeOrphanSetDefaultButtons();
+            return;
+        }
 
-        if (cardHTML) {
-            const existingCard = ComponentFinder.findByCollectionId(collection.id, '[data-collection-id]')[0];
-            if (existingCard) {
-                this.updateExistingCollectionCard(existingCard, collection);
-                this.sortCollectionCards();
-                return;
-            }
-
-            grid.insertAdjacentHTML('beforeend', cardHTML);
-            const newCard = grid.lastElementChild;
-
+        const newCard = this.renderCollectionCard(collection);
+        if (newCard) {
+            grid.appendChild(newCard);
             this.sortCollectionCards();
             this.animateNewCard(newCard);
+            this.removeOrphanSetDefaultButtons();
         }
     }
 
@@ -385,26 +317,16 @@ class CollectionList extends BaseComponent {
         });
     }
 
-    updateCollectionTitle(titleElement, collection) {
-        if (!titleElement) return;
+    removeOrphanSetDefaultButtons() {
+        const grid = document.querySelector(this.selectors.collectionsGrid);
+        if (!grid) return;
 
-        const existingBadge = titleElement.querySelector('.badge');
-        if (existingBadge) {
-            existingBadge.remove();
-        }
+        const orphanButtons = Array.from(grid.children).filter(
+            el => el.matches && el.matches('.set-default-btn')
+        );
 
-        const titleText = titleElement.childNodes[0];
-        if (titleText) {
-            titleText.textContent = collection.name;
-        } else {
-            titleElement.innerHTML = MessageManager.escapeHtml(collection.name);
-        }
-
-        if (collection.is_default) {
-            const badge = document.createElement('span');
-            badge.className = 'badge bg-primary ms-2';
-            badge.textContent = 'Default';
-            titleElement.appendChild(badge);
+        if (orphanButtons.length > 0) {
+            orphanButtons.forEach(btn => btn.remove());
         }
     }
 
@@ -434,39 +356,13 @@ class CollectionList extends BaseComponent {
         this.animateUpdatedCard(cardElement);
     }
 
-    ensureGridExists() {
-        if (document.querySelector(this.selectors.collectionsGrid)) {
-            return;
-        }
-
-        const possibleAnchors = [
-            '.container .row .col-12',
-            '.container .row',
-            '.container',
-            'main'
-        ];
-
-        let targetElement = null;
-        for (const selector of possibleAnchors) {
-            targetElement = document.querySelector(selector);
-            if (targetElement) break;
-        }
-
-        if (!targetElement) return;
-
-        const grid = this.buildGridContainer();
-        targetElement.appendChild(grid);
-    }
-
-    buildGridContainer() {
-        const grid = document.createElement('div');
-        grid.className = 'row g-4';
-        grid.id = 'collections-grid';
-        return grid;
+    updateCollectionTitle(titleElement, collection) {
+        if (!titleElement) return;
+        this.rebuildCollectionTitle(titleElement, collection.id, collection.is_default, collection.name);
     }
 
     renderCollectionCard(collection) {
-        const existingCard = document.querySelector('[data-collection-id]');
+        const existingCard = document.querySelector('div[data-collection-id]');
         if (existingCard) {
             return this.cloneExistingCard(existingCard, collection);
         }
@@ -482,16 +378,17 @@ class CollectionList extends BaseComponent {
             }
         }
 
-        return '';
+        return null;
     }
 
     cloneExistingCard(existingCard, collection) {
         const clonedCard = existingCard.cloneNode(true);
-
-        clonedCard.setAttribute('data-collection-id', collection.id);
+        clonedCard.setAttribute('data-collection-id', String(collection.id));
 
         const titleElement = clonedCard.querySelector('.collection-title');
-        this.updateCollectionTitle(titleElement, collection);
+        if (titleElement) {
+            this.updateCollectionTitle(titleElement, collection);
+        }
 
         const itemsCountElement = clonedCard.querySelector('.collection-items-count');
         if (itemsCountElement) {
@@ -524,33 +421,208 @@ class CollectionList extends BaseComponent {
                   <a href="/catalog/" class="btn btn-sm btn-outline-primary">Add Products</a>
                 </div>
             `;
-
             const headerEl = clonedCard.querySelector('.collection-header');
-            const footerEl = clonedCard.querySelector('.collection-footer');
-
-            if (footerEl) {
-                footerEl.parentNode.insertBefore(emptyElement, footerEl);
-            } else if (headerEl && headerEl.parentNode) {
-                headerEl.parentNode.appendChild(emptyElement);
+            if (headerEl) {
+                headerEl.insertAdjacentElement('afterend', emptyElement);
             } else {
-                const cardEl = clonedCard.querySelector('.collection-card');
-                if (cardEl) {
-                    cardEl.appendChild(emptyElement);
-                }
+                 clonedCard.querySelector('.collection-card')?.appendChild(emptyElement);
             }
         } else {
             emptyElement.style.display = 'block';
         }
 
-        return clonedCard.outerHTML;
+        return clonedCard;
+    }
+
+    openModal() {
+        if (!this.modal) return;
+        this.modal.classList.remove(this.cssClasses.hidden);
+        document.body.classList.add(this.cssClasses.modalOpen);
+        this.clearForm();
+        this.clearMessages();
+        const form = this.modal.querySelector(this.selectors.form);
+        const isEmptyState = !!document.querySelector(this.selectors.emptyState);
+        if (form && form.is_default) {
+            if (isEmptyState) {
+                form.is_default.checked = true;
+                form.is_default.disabled = true;
+            } else {
+                form.is_default.disabled = false;
+            }
+        }
+        setTimeout(() => {
+            this.modal.querySelector(this.selectors.nameInput)?.focus();
+        }, 100);
+    }
+
+    closeModal() {
+        if (!this.modal) return;
+        this.modal.classList.add(this.cssClasses.hidden);
+        document.body.classList.remove(this.cssClasses.modalOpen);
+        this.clearForm();
+        this.clearMessages();
+    }
+
+    async handleFormSubmit() {
+        const formData = this.getFormData();
+        this.clearMessages();
+        this.setLoadingState(true);
+        try {
+            await this.httpClient.handleResponse(
+                await this.httpClient.sendJSON(this.createUrl, formData),
+                this,
+                {
+                    onLoginRedirect: (loginUrl) => this.handleLogoutDetection(loginUrl),
+                    onSuccess: (data) => {
+                        if (data.success) {
+                            this.handleSuccess(data.collection);
+                        } else {
+                            this.handleErrors(data.errors || {non_field_errors: ['Unknown error occurred']});
+                        }
+                    },
+                    onError: () => {
+                        this.handleErrors({non_field_errors: ['Network error. Please try again.']});
+                    }
+                }
+            );
+        } catch (error) {
+            if (AuthenticationHandler.isAuthenticationError(error)) {
+                this.handleLogoutDetection();
+            } else {
+                this.handleErrors({non_field_errors: ['Network error. Please try again.']});
+            }
+        } finally {
+            this.setLoadingState(false);
+        }
+    }
+
+    getFormData() {
+        const form = this.modal.querySelector(this.selectors.form);
+        const isEmptyState = !!document.querySelector(this.selectors.emptyState);
+
+        return {
+            name: form.name.value.trim(),
+            description: form.description.value.trim(),
+            is_public: form.is_public.checked,
+            is_default: isEmptyState ? true : form.is_default.checked
+        };
+    }
+
+    handleSuccess(collection) {
+        this.showSuccessMessage('Collection created successfully!');
+        this.broadcastCollectionCreated(collection);
+        this.addCollectionToGrid(collection);
+        setTimeout(() => {
+            this.closeModal();
+        }, 1500);
+    }
+
+    handleErrors(errors) {
+        Object.keys(errors).forEach((field) => {
+            const fieldError = this.modal.querySelector(`[data-field="${field}"]`);
+            if (fieldError) {
+                fieldError.textContent = errors[field][0];
+                fieldError.classList.add(this.cssClasses.show);
+            }
+        });
+        if (errors.non_field_errors) {
+            this.showErrorMessage(errors.non_field_errors[0]);
+        }
+    }
+
+    setLoadingState(isLoading) {
+        LoadingStateManager.setModalLoadingState(this.modal, isLoading, this.selectors, this.cssClasses);
+    }
+
+    showSuccessMessage(message) {
+        const errorContainer = this.modal?.querySelector(this.selectors.errorContainer);
+        if (errorContainer) {
+            errorContainer.className = 'form-errors success';
+            errorContainer.innerHTML = `<i class="fas fa-check me-1"></i>${MessageManager.escapeHtml(message)}`;
+        }
+    }
+
+    showErrorMessage(message) {
+        const errorContainer = this.modal?.querySelector(this.selectors.errorContainer);
+        if (errorContainer) {
+            errorContainer.className = 'form-errors error';
+            errorContainer.innerHTML = `<i class="fas fa-exclamation-triangle me-1"></i>${MessageManager.escapeHtml(message)}`;
+        }
+    }
+
+    sortCollectionCards() {
+        const grid = document.querySelector(this.selectors.collectionsGrid);
+        if (!grid) return;
+        const cards = Array.from(grid.querySelectorAll('div[data-collection-id]'));
+        if (cards.length <= 1) return;
+        cards.sort((a, b) => {
+            const aIsDefault = this.getCollectionIsDefault(a);
+            const bIsDefault = this.getCollectionIsDefault(b);
+            const aUpdatedAt = this.getCollectionUpdatedAt(a);
+            const bUpdatedAt = this.getCollectionUpdatedAt(b);
+            if (aIsDefault !== bIsDefault) {
+                return bIsDefault - aIsDefault;
+            }
+            return new Date(bUpdatedAt) - new Date(aUpdatedAt);
+        });
+        cards.forEach(card => {
+            grid.appendChild(card);
+        });
+    }
+
+    getCollectionIsDefault(cardElement) {
+        const titleElement = cardElement.querySelector('.collection-title');
+        if (!titleElement) return false;
+        const badge = titleElement.querySelector('.badge');
+        return badge && badge.textContent.trim() === 'Default';
+    }
+
+    getCollectionUpdatedAt(cardElement) {
+        const updatedElement = cardElement.querySelector('.collection-footer small');
+        if (!updatedElement) return new Date().toISOString();
+        const text = updatedElement.textContent;
+        const match = text.match(/Updated: (.+)/);
+        if (match && match[1] !== 'Now') {
+            try {
+                return new Date(match[1]).toISOString();
+            } catch (e) {
+                return new Date().toISOString();
+            }
+        }
+        return new Date().toISOString();
+    }
+
+    ensureGridExists() {
+        if (document.querySelector(this.selectors.collectionsGrid)) {
+            return;
+        }
+        const possibleAnchors = [
+            '.container .row .col-12',
+            '.container .row',
+            '.container',
+            'main'
+        ];
+        let targetElement = null;
+        for (const selector of possibleAnchors) {
+            targetElement = document.querySelector(selector);
+            if (targetElement) break;
+        }
+        if (!targetElement) return;
+        const grid = this.buildGridContainer();
+        targetElement.appendChild(grid);
+    }
+
+    buildGridContainer() {
+        const grid = document.createElement('div');
+        grid.className = 'row g-4';
+        grid.id = 'collections-grid';
+        return grid;
     }
 
     animateNewCard(cardElement) {
         if (!cardElement) return;
-
         cardElement.style.opacity = '0';
         cardElement.style.transform = 'translateY(20px)';
-
         setTimeout(() => {
             cardElement.style.transition = 'all 0.3s ease';
             cardElement.style.opacity = '1';
@@ -560,10 +632,8 @@ class CollectionList extends BaseComponent {
 
     animateUpdatedCard(cardElement) {
         if (!cardElement) return;
-
         cardElement.style.transform = 'scale(1.02)';
         cardElement.style.transition = 'transform 0.2s ease';
-
         setTimeout(() => {
             cardElement.style.transform = 'scale(1)';
         }, 200);
@@ -571,15 +641,12 @@ class CollectionList extends BaseComponent {
 
     clearForm() {
         if (!this.modal) return;
-
         const form = this.modal.querySelector(this.selectors.form);
         if (!form) return;
-
         form.name.value = '';
         form.description.value = '';
         form.is_public.checked = false;
         form.is_default.checked = false;
-
         const textarea = form.description;
         if (textarea) {
             textarea.style.height = 'auto';
@@ -588,12 +655,10 @@ class CollectionList extends BaseComponent {
 
     clearMessages() {
         if (!this.modal) return;
-
         this.modal.querySelectorAll('.field-error').forEach((error) => {
             error.textContent = '';
             error.classList.remove(this.cssClasses.show);
         });
-
         const errorContainer = this.modal.querySelector(this.selectors.errorContainer);
         if (errorContainer) {
             errorContainer.className = 'form-errors';

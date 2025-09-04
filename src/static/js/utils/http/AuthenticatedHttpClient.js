@@ -1,4 +1,4 @@
-import {getCookie, isLoginRedirectResponse, isLoginRedirectErrorLike} from '../httpAuth.js';
+import {getCookie, isLoginRedirectResponse} from '../httpAuth.js';
 
 export class AuthenticatedHttpClient {
     constructor(csrfToken = null) {
@@ -79,13 +79,5 @@ export class AuthenticatedHttpClient {
                 return {success: false, error};
             }
         }
-    }
-
-    isAuthenticationError(error) {
-        return isLoginRedirectErrorLike(error);
-    }
-
-    updateCSRFToken(token = null) {
-        this.csrfToken = token || getCookie('csrftoken');
     }
 }

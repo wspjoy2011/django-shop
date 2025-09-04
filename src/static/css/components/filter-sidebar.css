@@ -7,7 +7,7 @@
     opacity: 0;
     visibility: hidden;
     transition: opacity .18s ease, visibility .18s ease;
-    z-index: 1040;
+    z-index: 1240;
 }
 
 .filter-overlay.active {
@@ -31,7 +31,7 @@
     transition: transform .52s cubic-bezier(.22, .61, .36, 1),
     opacity .52s ease,
     visibility .52s step-end;
-    z-index: 1041;
+    z-index: 1241;
     display: flex;
     flex-direction: column;
     border-left: 1px solid rgba(17, 24, 39, .08);
