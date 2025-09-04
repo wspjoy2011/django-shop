@@ -5,7 +5,7 @@ import { AuthenticationHandler } from '../utils/components/AuthenticationHandler
 import { AuthenticatedHttpClient } from '../utils/http/AuthenticatedHttpClient.js';
 import { LoadingStateManager } from '../utils/components/LoadingStateManager.js';
 
-class CollectionCreateModal extends BaseComponent {
+class CollectionList extends BaseComponent {
     constructor() {
         super({ broadcastChannelName: 'collection-updates' });
 
@@ -604,5 +604,5 @@ class CollectionCreateModal extends BaseComponent {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    new CollectionCreateModal();
+    new CollectionList();
 });
