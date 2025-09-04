@@ -1,5 +1,6 @@
 {% extends "layout/base.html" %}
 {% load static %}
+{% load favorite_tags %}
 
 {% block title %}Favorite Lists{% endblock %}
 
@@ -13,6 +14,10 @@
 {% endblock %}
 
 {% block content %}
+  <div id="favorites-api"
+       data-create-url="{% api_collection_create_url %}"
+       hidden></div>
+
   <div class="container mt-4">
     <div class="row">
       <div class="col-12">
@@ -54,6 +59,10 @@
         <!-- Collections Grid -->
         <div class="row g-4" id="collections-grid">
           {% for collection in collections %}
+            <div class="collection-api"
+                 data-collection-id="{{ collection.id }}"
+                 data-set-default-url="{{ collection.id|api_set_default_url }}"
+                 hidden></div>
             {% include 'components/favorites/collection_card.html' with collection=collection %}
           {% endfor %}
         </div>

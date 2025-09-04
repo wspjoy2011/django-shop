@@ -32,8 +32,8 @@ def rating_stars(
     user_rated = product.is_rated_by(user)
     user_score = product.get_user_rating(user)
 
-    rating_url = reverse('ratings:product_rating_create_update', args=[product.pk])
-    rating_delete_url = reverse('ratings:product_rating_delete', args=[product.pk])
+    rating_url = reverse('api:product_rating_create_update', args=[product.pk])
+    rating_delete_url = reverse('api:product_rating_create_update', args=[product.pk])
 
     return {
         'rating': rating,
@@ -72,8 +72,8 @@ def likes_dislikes(
 
     extra_class = 'me-3' if likes_count == 0 and dislikes_count == 0 else ''
 
-    like_url = reverse('ratings:product_like_toggle', args=[product.pk])
-    dislike_url = reverse('ratings:product_dislike_toggle', args=[product.pk])
+    like_url = reverse('api:product_like_toggle', args=[product.pk])
+    dislike_url = reverse('api:product_dislike_toggle', args=[product.pk])
 
     request = context['request']
     user = request.user

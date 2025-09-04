@@ -1,4 +1,4 @@
-import {getCookie, isLoginRedirectResponse} from '../httpAuth.js';
+import { getCookie, isLoginRedirectResponse } from '../httpAuth.js';
 
 export class AuthenticatedHttpClient {
     constructor(csrfToken = null) {
@@ -29,26 +29,19 @@ export class AuthenticatedHttpClient {
         return fetch(url, finalOptions);
     }
 
-    async sendForm(url, data) {
-        const body = new URLSearchParams();
-        for (const [k, v] of Object.entries(data)) {
-            body.append(k, String(v));
-        }
-
+    async sendJSON(url, data, method = 'POST') {
         return this.sendRequest(url, {
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
-            },
-            body: body.toString()
-        });
-    }
-
-    async sendJSON(url, data) {
-        return this.sendRequest(url, {
+            method: method,
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(data)
+        });
+    }
+
+    async sendDelete(url) {
+        return this.sendRequest(url, {
+            method: 'DELETE'
         });
     }
 
@@ -60,17 +53,27 @@ export class AuthenticatedHttpClient {
         } = options;
 
         if (isLoginRedirectResponse(response)) {
-            if (onLoginRedirect) onLoginRedirect(response.url);
-            return {isLoginRedirect: true, url: response.url};
+            if (onLoginRedirect) {
+                onLoginRedirect(response.url || '/login/');
+            }
+            return {isLoginRedirect: true, url: response.url || '/login/'};
         }
 
-        const data = await response.json().catch(() => null);
+        let data = null;
+        try {
+            data = await response.json();
+        } catch (e) {
+        }
 
         if (response.ok) {
             if (onSuccess) onSuccess(data);
             return {success: true, data};
         } else {
-            if (data && onSuccess) {
+            if (data && data.error) {
+                const error = new Error(data.error);
+                if (onError) onError(error);
+                return {success: false, error, data};
+            } else if (data && onSuccess) {
                 onSuccess(data);
                 return {success: false, data};
             } else {

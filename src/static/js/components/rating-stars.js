@@ -179,7 +179,7 @@ class RatingStarsHandler extends BaseComponent {
         const url = component.dataset.ratingUrl;
         try {
             const result = await this.httpClient.handleResponse(
-                await this.httpClient.sendForm(url, {score}),
+                await this.httpClient.sendJSON(url, {score}),
                 component,
                 {
                     onLoginRedirect: (loginUrl) => this.handleLogoutDetection(component, loginUrl),
@@ -227,7 +227,7 @@ class RatingStarsHandler extends BaseComponent {
 
         const url = component.dataset.ratingDeleteUrl;
         try {
-            const response = await this.httpClient.sendForm(url, {});
+            const response = await this.httpClient.sendDelete(url);
 
             if (AuthenticationHandler.isLoginRedirect(response)) {
                 this.handleLogoutDetection(component, response.url);

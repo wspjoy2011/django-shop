@@ -34,7 +34,6 @@ else:
     IMAGES_DATASET_CSV = DATASETS_DIR / 'images.csv'
     PRODUCTS_DATASET_CSV = DATASETS_DIR / 'products.csv'
 
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
@@ -72,6 +71,7 @@ INSTALLED_APPS = [
     # Pypi third apps
     'django_extensions',
     'debug_toolbar',
+    'rest_framework',
 
     # Project apps
     'apps.accounts',
@@ -120,7 +120,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'core.wsgi.application'
-
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
@@ -188,7 +187,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
@@ -199,7 +197,6 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 
 USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
@@ -224,3 +221,11 @@ AUTH_USER_MODEL = 'accounts.User'
 ADMIN_USERNAME = os.getenv('ADMIN_USERNAME')
 ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD')
 ADMIN_EMAIL = os.getenv('ADMIN_EMAIL')
+
+# DRF settings
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+}

@@ -32,8 +32,9 @@ class CollectionList extends BaseComponent {
             show: 'show'
         };
 
-        this.createUrl = '/favorites/collections/create/';
-        this.setDefaultUrl = '/favorites/collections/{id}/set-default/';
+        this.createUrl = '/api/v1/favorites/collections/';
+        this.setDefaultUrl = '/api/v1/favorites/collections/{id}/set-default/';
+
         this.httpClient = new AuthenticatedHttpClient();
         this.init();
     }

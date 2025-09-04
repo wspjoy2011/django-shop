@@ -13,7 +13,7 @@ def favorite_button(context, product, size='normal', show_count=True):
 
     favorites_count = product.get_favorites_count()
 
-    favorite_toggle_url = reverse('favorites:toggle', args=[product.pk])
+    favorite_toggle_url = reverse('api:product_favorite_toggle', args=[product.pk])
 
     size_classes = {
         'small': 'favorite-small',
@@ -30,3 +30,13 @@ def favorite_button(context, product, size='normal', show_count=True):
         'is_authenticated': user.is_authenticated,
         'favorite_toggle_url': favorite_toggle_url,
     }
+
+
+@register.filter
+def api_set_default_url(collection_id):
+    return reverse('api:favorite_collection_set_default', args=[collection_id])
+
+
+@register.simple_tag
+def api_collection_create_url():
+    return reverse('api:favorite_collection_create')

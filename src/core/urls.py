@@ -26,6 +26,7 @@ urlpatterns = [
     path("", include("apps.catalog.urls")),
     path("ratings/", include("apps.ratings.urls")),
     path("favorites/", include("apps.favorites.urls")),
+    path('api/v1/', include('apps.api.rest.urls')),
 ]
 
 if settings.DEBUG:
