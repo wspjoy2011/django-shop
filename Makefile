@@ -67,6 +67,20 @@ migrate: ## Run Django migrations
 	@echo "Django migrations completed!"
 	@echo "========================================="
 
+rebuild-indexes: ## Rebuild all missing database indexes from model definitions
+	@echo "========================================="
+	@echo "Database Index Rebuild Process"
+	@echo "========================================="
+	@echo "Starting database..."
+	@docker compose --env-file $(ENV_FILE) up -d --wait --wait-timeout 60 db
+	@echo "Running index rebuild..."
+	@docker compose --env-file $(ENV_FILE) run --rm -e USE_PGBOUNCER=false web rebuild-indexes.sh
+	@echo "Stopping database..."
+	@docker compose --env-file $(ENV_FILE) stop db
+	@echo "========================================="
+	@echo "Index rebuild completed!"
+	@echo "========================================="
+
 # ============================================
 # Database Seeding Commands
 # ============================================

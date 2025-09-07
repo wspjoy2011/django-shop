@@ -115,6 +115,9 @@ class Product(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    ratings_sum = models.PositiveIntegerField(default=0)
+    ratings_count = models.PositiveIntegerField(default=0, db_index=True)
+
     article_type = models.ForeignKey(
         'ArticleType',
         on_delete=models.RESTRICT,
@@ -187,14 +190,10 @@ class Product(models.Model):
         return reverse('catalog:product_detail', kwargs={'slug': self.slug})
 
     def get_rating_stats(self):
-        if hasattr(self, 'ratings_list'):
-            if not self.ratings_list:
-                return {'avg_rating': 0.0, 'ratings_count': 0}
-
-            scores = [rating.score for rating in self.ratings_list]
+        if self.ratings_count > 0:
             return {
-                'avg_rating': sum(scores) / len(scores),
-                'ratings_count': len(scores)
+                'avg_rating': self.ratings_sum / self.ratings_count,
+                'ratings_count': self.ratings_count
             }
         return {'avg_rating': 0.0, 'ratings_count': 0}
 

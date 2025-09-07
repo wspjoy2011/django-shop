@@ -4,6 +4,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth import get_user_model
 from django.db.utils import DatabaseError
 from apps.catalog.models import Product
+from apps.ratings.models import Dislike, Rating, Like
 from fixtures.generators.ratings import RatingsGenerator
 from fixtures.db_tuning import (
     optimize_postgresql_for_bulk_operations,
@@ -73,13 +74,6 @@ class Command(BaseCommand):
             help="Batch size for bulk operations (default: 50000)",
         )
         parser.add_argument(
-            "--no-batch-tx",
-            action="store_true",
-            dest="no_batch_tx",
-            default=False,
-            help="Disable per-batch transactions for maximum speed.",
-        )
-        parser.add_argument(
             "--skip-optimization",
             action="store_true",
             dest="skip_optimization",
@@ -96,7 +90,6 @@ class Command(BaseCommand):
         dislikes_min = options["dislikes_min"]
         dislikes_max = options["dislikes_max"]
         batch_size = options["batch_size"]
-        use_transaction_per_batch = not options["no_batch_tx"]
         skip_optimization = options["skip_optimization"]
 
         if not (0 < coverage <= 100):
@@ -124,7 +117,6 @@ class Command(BaseCommand):
                 f"  Likes: {likes_min}-{likes_max} per product\n"
                 f"  Dislikes: {dislikes_min}-{dislikes_max} per product\n"
                 f"  Batch size: {batch_size:,}\n"
-                f"  Per-batch transactions: {use_transaction_per_batch}\n"
                 f"  PostgreSQL optimization: {not skip_optimization}\n"
                 f"  Available users: {users_count:,}"
             )
@@ -134,7 +126,12 @@ class Command(BaseCommand):
         if not skip_optimization:
             self.stdout.write(self.style.NOTICE("Optimizing PostgreSQL for bulk operations..."))
             t0 = time.perf_counter()
-            table_names = ['ratings_rating', 'ratings_like', 'ratings_dislike']
+            table_names = [
+                Rating._meta.db_table,
+                Like._meta.db_table,
+                Dislike._meta.db_table,
+                Product._meta.db_table,
+            ]
             stored_indexes, drop_results = optimize_postgresql_for_bulk_operations(table_names)
 
             ok = sum(1 for v in drop_results.values() if v)
@@ -151,7 +148,7 @@ class Command(BaseCommand):
         start_time = time.perf_counter()
 
         generation_error: DatabaseError | None = None
-        generator = RatingsGenerator(batch_size=batch_size, use_transaction_per_batch=use_transaction_per_batch)
+        generator = RatingsGenerator(batch_size=batch_size)
 
         try:
             generator.generate_all_ratings(

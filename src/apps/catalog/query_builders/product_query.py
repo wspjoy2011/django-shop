@@ -1,7 +1,7 @@
 from decimal import Decimal
 
 from django.db.models import DecimalField, Case, When, FloatField, Value, Subquery, Avg, OuterRef, Q, F
-from django.db.models.functions import Coalesce
+from django.db.models.functions import Coalesce, Cast
 
 from apps.ratings.models import Rating
 
@@ -130,16 +130,10 @@ class ProductQuerysetBuilder:
 
     def add_rating_annotation(self):
         if 'avg_rating' not in self._ordering_annotations:
-            avg_rating_subquery = Rating.objects.filter(
-                product=OuterRef('pk')
-            ).values('product').annotate(
-                avg_score=Avg('score')
-            ).values('avg_score')
-
             self.queryset = self.queryset.annotate(
-                avg_rating=Coalesce(
-                    Subquery(avg_rating_subquery[:1]),
-                    Value(0.0),
+                avg_rating=Case(
+                    When(ratings_count__gt=0, then=Cast(F('ratings_sum'), FloatField()) / F('ratings_count')),
+                    default=Value(0.0),
                     output_field=FloatField()
                 )
             )

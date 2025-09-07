@@ -22,6 +22,35 @@ class ProductAccessMixin(View):
 class ProductQuerysetMixin:
 
     def get_base_queryset(self):
+        user = self.request.user
+
+        prefetch_list = [
+            Prefetch(
+                'likes',
+                queryset=Like.objects.only('product_id', 'user_id'),
+                to_attr='likes_list'
+            ),
+            Prefetch(
+                'dislikes',
+                queryset=Dislike.objects.only('product_id', 'user_id'),
+                to_attr='dislikes_list'
+            ),
+            Prefetch(
+                'favorite_items',
+                queryset=FavoriteItem.objects.select_related('collection__user'),
+                to_attr='favorites_list'
+            )
+        ]
+
+        if user.is_authenticated:
+            prefetch_list.append(
+                Prefetch(
+                    'ratings',
+                    queryset=Rating.objects.filter(user=user),
+                    to_attr='ratings_list'
+                )
+            )
+
         return (
             super()
             .get_queryset()
@@ -35,28 +64,7 @@ class ProductQuerysetMixin:
                 "inventory",
                 "inventory__currency",
             )
-            .prefetch_related(
-                Prefetch(
-                    'ratings',
-                    queryset=Rating.objects.only('score', 'product_id', 'user_id'),
-                    to_attr='ratings_list'
-                ),
-                Prefetch(
-                    'likes',
-                    queryset=Like.objects.only('product_id', 'user_id'),
-                    to_attr='likes_list'
-                ),
-                Prefetch(
-                    'dislikes',
-                    queryset=Dislike.objects.only('product_id', 'user_id'),
-                    to_attr='dislikes_list'
-                ),
-                Prefetch(
-                    'favorite_items',
-                    queryset=FavoriteItem.objects.select_related('collection__user'),
-                    to_attr='favorites_list'
-                )
-            )
+            .prefetch_related(*prefetch_list)
         )
 
 
