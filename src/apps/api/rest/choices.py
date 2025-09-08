@@ -20,7 +20,6 @@ class RatingActionChoices:
 
 
 class FavoriteActionChoices:
-    # Favorite toggle actions
     ADDED = 'added'
     REMOVED = 'removed'
 

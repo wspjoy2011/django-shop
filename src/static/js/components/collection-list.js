@@ -226,7 +226,7 @@ class CollectionList extends BaseComponent {
             titleElement.removeChild(titleElement.firstChild);
         }
 
-        titleElement.appendChild(document.createTextNode(collectionName.trim() + ' '));
+        titleElement.appendChild(document.createTextNode(collectionName.trim()));
 
         if (isDefault) {
             const badge = document.createElement('span');
@@ -234,17 +234,26 @@ class CollectionList extends BaseComponent {
             badge.textContent = 'Default';
             titleElement.appendChild(badge);
         } else {
-            const button = document.createElement('button');
-            button.type = 'button';
-            button.className = 'btn btn-link p-0 ms-2 set-default-btn';
-            button.setAttribute('data-collection-id', String(collectionId));
-            button.title = 'Set as default collection';
+            const actions = document.createElement('span');
+            actions.className = 'collection-actions';
 
-            const icon = document.createElement('i');
-            icon.className = 'fas fa-star text-muted';
-            button.appendChild(icon);
+            const starButton = document.createElement('button');
+            starButton.type = 'button';
+            starButton.className = 'btn btn-link p-0 ms-2 set-default-btn';
+            starButton.setAttribute('data-collection-id', String(collectionId));
+            starButton.title = 'Set as default collection';
+            starButton.innerHTML = '<i class="fas fa-star text-muted"></i>';
+            actions.appendChild(starButton);
 
-            titleElement.appendChild(button);
+            const deleteButton = document.createElement('button');
+            deleteButton.type = 'button';
+            deleteButton.className = 'btn btn-link p-0 ms-2 delete-collection-btn';
+            deleteButton.setAttribute('data-collection-id', String(collectionId));
+            deleteButton.title = 'Delete collection';
+            deleteButton.innerHTML = '<i class="fas fa-trash-alt text-muted"></i>';
+            actions.appendChild(deleteButton);
+
+            titleElement.appendChild(actions);
         }
     }
 

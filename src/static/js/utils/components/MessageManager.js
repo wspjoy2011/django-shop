@@ -10,7 +10,7 @@ export class MessageManager {
             success: 'fas fa-check',
             error: 'fas fa-times',
             info: 'fas fa-info',
-            warning: 'fas fa-exclamation'
+            warning: 'fas fa-exclamation-triangle'
         },
         timeouts: {
             success: 2000,

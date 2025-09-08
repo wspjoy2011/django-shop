@@ -20,7 +20,6 @@ if [ "$confirm" != "yes" ]; then
     exit 0
 fi
 
-# Record start time
 START_TIME=$(date +%s)
 
 echo "Step 1/6: Cleaning favorites..."

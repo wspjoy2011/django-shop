@@ -4,14 +4,20 @@
       <div>
         <h3 class="collection-title">
           COLLECTION_NAME
-          <span class="badge bg-primary ms-2" style="display: none;">Default</span>
-          <button type="button"
-                  class="btn btn-link p-0 ms-2 set-default-btn"
-                  data-collection-id=""
-                  title="Set as default collection"
-                  style="display: none;">
-            <i class="fas fa-star text-muted"></i>
-          </button>
+          <span class="collection-actions">
+            <button type="button"
+                    class="btn btn-link p-0 ms-2 set-default-btn"
+                    data-collection-id=""
+                    title="Set as default collection">
+              <i class="fas fa-star text-muted"></i>
+            </button>
+            <button type="button"
+                    class="btn btn-link p-0 ms-2 delete-collection-btn"
+                    data-collection-id=""
+                    title="Delete collection">
+              <i class="fas fa-trash-alt text-muted"></i>
+            </button>
+          </span>
         </h3>
         <p class="collection-items-count text-muted mb-0">
           Items count: ITEMS_COUNT
