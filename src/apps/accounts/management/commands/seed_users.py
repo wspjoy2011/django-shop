@@ -23,13 +23,6 @@ class Command(BaseCommand):
             help="Total number of users to generate (default: 500000)",
         )
         parser.add_argument(
-            "--batch-size",
-            dest="batch_size",
-            type=int,
-            default=5000,
-            help="How many users to create at once (default: 5000)",
-        )
-        parser.add_argument(
             "--password",
             dest="password",
             type=str,
@@ -53,14 +46,13 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         total_count = options["count"]
-        batch_size = options["batch_size"]
         password = options["password"]
         email_domain = options["email_domain"]
         skip_optimization = options["skip_optimization"]
 
         self.stdout.write(
             self.style.NOTICE(
-                f"Generating {total_count:,} users in batches of {batch_size:,}..."
+                f"Generating {total_count:,} users..."
             )
         )
 
@@ -81,7 +73,7 @@ class Command(BaseCommand):
         start_time = time.perf_counter()
 
         try:
-            user_generator = UserGenerator(batch_size=batch_size)
+            user_generator = UserGenerator()
             user_generator.generate_users(
                 total_count=total_count,
                 email_domain=email_domain,

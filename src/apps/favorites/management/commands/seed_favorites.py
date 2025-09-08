@@ -37,20 +37,6 @@ class Command(BaseCommand):
             help="Maximum number of favorite items per collection (default: 50)",
         )
         parser.add_argument(
-            "--batch-size",
-            dest="batch_size",
-            type=int,
-            default=10000,
-            help="Bulk insert batch size for seeding (default: 10000)",
-        )
-        parser.add_argument(
-            "--user-batch-size",
-            dest="user_batch_size",
-            type=int,
-            default=1000,
-            help="User batch size to avoid SQLite variable limit (default: 1000)",
-        )
-        parser.add_argument(
             "--skip-optimization",
             action="store_true",
             dest="skip_optimization",
@@ -62,8 +48,6 @@ class Command(BaseCommand):
         percentage = options["percentage"]
         min_items = options["min_items"]
         max_items = options["max_items"]
-        batch_size = options["batch_size"]
-        user_batch_size = options["user_batch_size"]
         skip_optimization = options["skip_optimization"]
 
         if min_items > max_items:
@@ -93,9 +77,7 @@ class Command(BaseCommand):
                 self.stdout.write(
                     self.style.NOTICE(f"Creating favorite collections for {percentage}% of users...")
                 )
-                collections_generator = FavoriteCollectionsGenerator(
-                    batch_size=batch_size, use_transaction_per_batch=False
-                )
+                collections_generator = FavoriteCollectionsGenerator()
                 user_ids = collections_generator.select_users_and_create_collections(percentage)
 
                 if not user_ids:
@@ -107,10 +89,8 @@ class Command(BaseCommand):
                     self.stdout.write(
                         self.style.NOTICE(f"Generating {min_items}-{max_items} favorite items per collection...")
                     )
-                    items_generator = FavoriteItemsGenerator(
-                        batch_size=batch_size, use_transaction_per_batch=False
-                    )
-                    items_generator.generate_for_users(user_ids, min_items, max_items, user_batch_size)
+                    items_generator = FavoriteItemsGenerator()
+                    items_generator.generate_for_users(user_ids, min_items, max_items)
 
         except DatabaseError as e:
             seeding_error = e

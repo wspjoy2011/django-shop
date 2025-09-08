@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from django.db import transaction
+from django.db import connection
 from tqdm import tqdm
 
 User = get_user_model()
@@ -7,13 +7,10 @@ User = get_user_model()
 
 class UserCleaner:
 
-    def __init__(self):
-        self._deletion_plan = [
-            ("Users (except admin)", User.objects.exclude(username="admin")),
-        ]
-
     def clean(self) -> None:
-        with transaction.atomic():
-            for label, qs in tqdm(self._deletion_plan, desc="Cleaning users"):
-                deleted_count, _ = qs.delete()
-                tqdm.write(f"Deleted {deleted_count} rows from {label}")
+        table_name = User._meta.db_table
+
+        with connection.cursor() as cursor:
+            tqdm.write(f"Executing fast delete on table: \"{table_name}\"")
+            cursor.execute(f'DELETE FROM "{table_name}" WHERE is_superuser = FALSE;')
+            tqdm.write(f"Deleted {cursor.rowcount:,} non-superuser rows.")
