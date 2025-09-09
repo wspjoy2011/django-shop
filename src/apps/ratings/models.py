@@ -59,6 +59,11 @@ class Like(models.Model):
         constraints = [
             UniqueConstraint(fields=('user', 'product'), name='uniq_user_product_like'),
         ]
+        indexes = [
+            models.Index(fields=['product'], name='idx_like_product'),
+            models.Index(fields=['product', 'user'], name='idx_like_product_user'),
+            models.Index(fields=['product', '-created_at'], name='idx_like_product_created_desc'),
+        ]
 
     def __str__(self):
         return f"{self.user} liked {self.product}"
@@ -83,6 +88,11 @@ class Dislike(models.Model):
     class Meta:
         constraints = [
             UniqueConstraint(fields=('user', 'product'), name='uniq_user_product_dislike'),
+        ]
+        indexes = [
+            models.Index(fields=['product'], name='idx_dislike_product'),
+            models.Index(fields=['product', 'user'], name='idx_dislike_prod_user'),
+            models.Index(fields=['product', '-created_at'], name='idx_dislike_prod_created'),
         ]
 
     def __str__(self):

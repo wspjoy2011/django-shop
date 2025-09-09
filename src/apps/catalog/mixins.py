@@ -1,11 +1,13 @@
 from decimal import Decimal
 
 from django.contrib import messages
-from django.db.models import Prefetch, DecimalField, When, Case, Max, Min, F
+from django.db.models import Prefetch, DecimalField, Max, Min, F, Exists, OuterRef
+from django.db.models.functions import Coalesce
 from django.shortcuts import redirect
 from django.utils.http import urlencode
 from django.views import View
 
+from apps.catalog.models import Season
 from apps.favorites.models import FavoriteItem
 from apps.ratings.models import Rating, Like, Dislike
 
@@ -102,19 +104,19 @@ class ProductFilterContextMixin:
     def _get_price_range_context(self, queryset):
         price_range = queryset.aggregate(
             min_price=Min(
-                Case(
-                    When(inventory__sale_price__isnull=False, then='inventory__sale_price'),
-                    default='inventory__base_price',
-                    output_field=DecimalField(max_digits=10, decimal_places=2)
+                Coalesce(
+                    'inventory__sale_price',
+                    'inventory__base_price',
+                    output_field=DecimalField(max_digits=10, decimal_places=2),
                 )
             ),
             max_price=Max(
-                Case(
-                    When(inventory__sale_price__isnull=False, then='inventory__sale_price'),
-                    default='inventory__base_price',
-                    output_field=DecimalField(max_digits=10, decimal_places=2)
+                Coalesce(
+                    'inventory__sale_price',
+                    'inventory__base_price',
+                    output_field=DecimalField(max_digits=10, decimal_places=2),
                 )
-            )
+            ),
         )
 
         min_price = price_range['min_price'] or Decimal('0.00')
@@ -145,9 +147,14 @@ class ProductFilterContextMixin:
 
     @staticmethod
     def _get_season_options(queryset):
-        return list(
-            queryset.values_list("season__name", "season__slug").distinct().order_by("season__name")
+        seasons = (
+            Season.objects
+            .annotate(present=Exists(queryset.filter(season_id=OuterRef('pk'))))
+            .filter(present=True)
+            .values_list('name', 'slug')
+            .order_by('name')
         )
+        return list(seasons)
 
     @staticmethod
     def _get_availability_options(queryset):

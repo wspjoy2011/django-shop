@@ -32,8 +32,10 @@ services:
       - "5432:5432"
     volumes:
       - postgres-django-store-data:/var/lib/postgresql/data/
+      - ./configs/postgresql/postgresql.conf:/etc/postgresql/postgresql.conf:ro
     networks:
       - django-store-network
+    command: [ "postgres", "-c", "config_file=/etc/postgresql/postgresql.conf" ]
     healthcheck:
       test: >
         sh -c "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB} -h 127.0.0.1 || exit 1"
