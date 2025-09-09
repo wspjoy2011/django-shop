@@ -34,8 +34,10 @@ class RatingStarsHandler extends BaseComponent {
         this.broadcastManager.subscribe('rating_removed', (data) => {
             this.handleRatingRemoveMessage(data);
         });
+    }
 
-        this.broadcastManager.subscribe('logout_detected', (data) => {
+    setupAuthBroadcastSubscriptions() {
+        this.authBroadcastManager.subscribe('logout_detected', (data) => {
             this.handleLogoutMessage(data);
         });
     }
@@ -67,10 +69,8 @@ class RatingStarsHandler extends BaseComponent {
     }
 
     handleLogoutMessage(data) {
-        const {productId, ratingUrl} = data;
-        const componentsToUpdate = this.findComponentsForUpdate(productId, ratingUrl);
-
-        componentsToUpdate.forEach(comp => {
+        const allComponents = document.querySelectorAll(this.selectors.component);
+        allComponents.forEach(comp => {
             AuthenticationHandler.resetAuthenticationState(comp, (component) => {
                 component.dataset.userRated = 'false';
                 component.classList.remove('rated-active');
@@ -281,26 +281,8 @@ class RatingStarsHandler extends BaseComponent {
         }
     }
 
-    handleLogoutDetection(component, loginUrl = null) {
-        AuthenticationHandler.handleLogoutDetection(component, this.broadcastManager, {
-            loginUrl,
-            messageManager: MessageManager,
-            messageContainer: component.querySelector(this.selectors.messages),
-            productIdGetter: (comp, forBroadcast = false) => {
-                if (forBroadcast) {
-                    return {
-                        productId: comp.dataset.productId,
-                        ratingUrl: comp.dataset.ratingUrl
-                    };
-                }
-                return this.getAllProductComponents(comp);
-            },
-            resetCallback: (comp) => {
-                comp.dataset.userRated = 'false';
-                comp.classList.remove('rated-active');
-                this.resetUserRatingUI(comp);
-            }
-        });
+    handleLogoutDetection() {
+        AuthenticationHandler.handleGlobalLogout(this.authBroadcastManager);
     }
 
     updateContainerTitle(component) {

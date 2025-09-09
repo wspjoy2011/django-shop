@@ -6,6 +6,7 @@ export class BaseComponent {
         this.selectors = {};
         this.cssClasses = {};
         this.broadcastManager = null;
+        this.authBroadcastManager = null;
         this.csrfToken = null;
         this.broadcastChannelName = options.broadcastChannelName;
 
@@ -17,6 +18,7 @@ export class BaseComponent {
     init() {
         this.setupCSRF();
         this.setupBroadcastChannel();
+        this.setupAuthBroadcastChannel();
         this.bindEvents();
         this.bootstrapInitialState();
     }
@@ -32,12 +34,21 @@ export class BaseComponent {
         }
     }
 
+    setupAuthBroadcastChannel() {
+        this.authBroadcastManager = BroadcastManager.createManager('auth-updates');
+        this.setupAuthBroadcastSubscriptions();
+    }
+
     setupBroadcastSubscriptions() {
+    }
+
+    setupAuthBroadcastSubscriptions() {
     }
 
     bindEvents() {
         window.addEventListener('beforeunload', () => {
             this.broadcastManager?.close();
+            this.authBroadcastManager?.close();
         });
     }
 
@@ -50,5 +61,6 @@ export class BaseComponent {
 
     destroy() {
         this.broadcastManager?.close();
+        this.authBroadcastManager?.close();
     }
 }

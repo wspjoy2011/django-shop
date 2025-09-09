@@ -1,13 +1,13 @@
-import { ComponentFinder } from '../utils/broadcastManager.js';
-import { BaseComponent } from '../utils/components/BaseComponent.js';
-import { MessageManager } from '../utils/components/MessageManager.js';
-import { AuthenticationHandler } from '../utils/components/AuthenticationHandler.js';
-import { AuthenticatedHttpClient } from '../utils/http/AuthenticatedHttpClient.js';
-import { LoadingStateManager } from '../utils/components/LoadingStateManager.js';
+import {ComponentFinder} from '../utils/broadcastManager.js';
+import {BaseComponent} from '../utils/components/BaseComponent.js';
+import {MessageManager} from '../utils/components/MessageManager.js';
+import {AuthenticationHandler} from '../utils/components/AuthenticationHandler.js';
+import {AuthenticatedHttpClient} from '../utils/http/AuthenticatedHttpClient.js';
+import {LoadingStateManager} from '../utils/components/LoadingStateManager.js';
 
 class LikesDislikesHandler extends BaseComponent {
     constructor() {
-        super({ broadcastChannelName: 'likes-dislikes-updates' });
+        super({broadcastChannelName: 'likes-dislikes-updates'});
 
         this.selectors = {
             component: '.likes-dislikes-component',
@@ -35,9 +35,7 @@ class LikesDislikesHandler extends BaseComponent {
     }
 
     init() {
-        this.bindEvents();
-        this.setupCSRF();
-        this.setupBroadcastChannel();
+        super.init();
         this.setupAuthUI();
     }
 
@@ -45,14 +43,16 @@ class LikesDislikesHandler extends BaseComponent {
         this.broadcastManager.subscribe('like_dislike_updated', (data) => {
             this.handleLikeDislikeUpdateMessage(data);
         });
+    }
 
-        this.broadcastManager.subscribe('logout_detected', (data) => {
+    setupAuthBroadcastSubscriptions() {
+        this.authBroadcastManager.subscribe('logout_detected', (data) => {
             this.handleLogoutMessage(data);
         });
     }
 
     handleLikeDislikeUpdateMessage(data) {
-        const { productId, action, likesCount, dislikesCount } = data;
+        const {productId, action, likesCount, dislikesCount} = data;
         const componentsToUpdate = this.findComponentsForUpdate(productId);
 
         componentsToUpdate.forEach(comp => {
@@ -62,10 +62,8 @@ class LikesDislikesHandler extends BaseComponent {
     }
 
     handleLogoutMessage(data) {
-        const { productId } = data;
-        const componentsToUpdate = this.findComponentsForUpdate(productId);
-
-        componentsToUpdate.forEach(comp => {
+        const allComponents = document.querySelectorAll(this.selectors.component);
+        allComponents.forEach(comp => {
             this.applyUnauthenticatedState(comp);
         });
     }
@@ -73,7 +71,7 @@ class LikesDislikesHandler extends BaseComponent {
     applyUnauthenticatedState(component) {
         AuthenticationHandler.applyUnauthenticatedState(component, {
             cssClasses: this.cssClasses,
-            selectors: { buttons: `${this.selectors.likeButton}, ${this.selectors.dislikeButton}` },
+            selectors: {buttons: `${this.selectors.likeButton}, ${this.selectors.dislikeButton}`},
             resetCallback: (comp) => {
                 this.resetSelectionState(comp);
                 this.ensureAuthHintTitles(comp);
@@ -141,7 +139,7 @@ class LikesDislikesHandler extends BaseComponent {
             this.showAuthenticationMessage(component);
             return;
         }
-        if (LoadingStateManager.isLoading(component, { cssClass: this.cssClasses.disabled })) return;
+        if (LoadingStateManager.isLoading(component, {cssClass: this.cssClasses.disabled})) return;
 
         const url = component.dataset.likeUrl;
         await this.toggleRating(component, url, 'like');
@@ -154,7 +152,7 @@ class LikesDislikesHandler extends BaseComponent {
             this.showAuthenticationMessage(component);
             return;
         }
-        if (LoadingStateManager.isLoading(component, { cssClass: this.cssClasses.disabled })) return;
+        if (LoadingStateManager.isLoading(component, {cssClass: this.cssClasses.disabled})) return;
 
         const url = component.dataset.dislikeUrl;
         await this.toggleRating(component, url, 'dislike');
@@ -193,19 +191,8 @@ class LikesDislikesHandler extends BaseComponent {
         }
     }
 
-    handleLogoutDetection(component, loginUrl = null) {
-        AuthenticationHandler.handleLogoutDetection(component, this.broadcastManager, {
-            loginUrl,
-            messageManager: MessageManager,
-            messageContainer: component.querySelector(this.selectors.messageContainer),
-            productIdGetter: (comp, forBroadcast = false) => {
-                if (forBroadcast) {
-                    return { productId: comp.dataset.productId };
-                }
-                return ComponentFinder.findByProductId(comp.dataset.productId, this.selectors.component);
-            },
-            resetCallback: (comp) => this.applyUnauthenticatedState(comp)
-        });
+    handleLogoutDetection() {
+        AuthenticationHandler.handleGlobalLogout(this.authBroadcastManager);
     }
 
     ensureAuthHintTitles(component) {
@@ -275,8 +262,8 @@ class LikesDislikesHandler extends BaseComponent {
 
     setLoadingState(component, isLoading) {
         LoadingStateManager.setLoadingState(component, isLoading, {
-            selectors: { buttons: `${this.selectors.likeButton}, ${this.selectors.dislikeButton}` },
-            cssClasses: { disabled: this.cssClasses.disabled },
+            selectors: {buttons: `${this.selectors.likeButton}, ${this.selectors.dislikeButton}`},
+            cssClasses: {disabled: this.cssClasses.disabled},
             disablePointerEvents: true
         });
     }

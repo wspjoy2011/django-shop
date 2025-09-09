@@ -82,35 +82,83 @@ export class MessageManager {
     }
 
     static showGlobalMessage(message, type = 'info', options = {}) {
-        const messagesContainer = document.querySelector('.messages-container') ||
-            document.querySelector('#messages') ||
-            document.querySelector('.alert-container');
-
-        if (messagesContainer) {
-            const alertClass = type === 'warning' ? 'alert-warning' :
-                type === 'error' ? 'alert-danger' : 'alert-info';
-
-            const messageElement = document.createElement('div');
-            messageElement.className = `alert ${alertClass} alert-dismissible fade show`;
-            messageElement.innerHTML = `
-                ${this.escapeHtml(message)}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            `;
-
-            messagesContainer.appendChild(messageElement);
-
-            const timeout = options.timeout || 5000;
-            setTimeout(() => {
-                if (messageElement.parentNode) {
-                    messageElement.remove();
-                }
-            }, timeout);
-
-            return messageElement;
-        } else {
-            console.warn('Global message:', message);
+        const messagesContainer = document.querySelector('.messages-container, #messages');
+        if (!messagesContainer) {
+            console.warn('Global message container not found. Message:', message);
             return null;
         }
+
+        const typeMap = {
+            warning: { alertClass: 'alert-warning', iconClass: 'fas fa-exclamation-circle fa-lg', title: 'Warning:' },
+            error: { alertClass: 'alert-danger', iconClass: 'fas fa-exclamation-triangle fa-lg', title: 'Error:' },
+            success: { alertClass: 'alert-success', iconClass: 'fas fa-check-circle fa-lg', title: 'Success:' },
+            info: { alertClass: 'alert-info', iconClass: 'fas fa-info-circle fa-lg', title: 'Info:' }
+        };
+        const config = typeMap[type] || typeMap.info;
+        const timeout = options.timeout || 10000;
+
+        const alertEl = document.createElement('div');
+        alertEl.className = `alert ${config.alertClass} alert-dismissible fade show message-alert`;
+        alertEl.setAttribute('role', 'alert');
+
+        const transitionDuration = timeout / 1000;
+        alertEl.innerHTML = `
+            <div class="d-flex align-items-center">
+                <div class="me-3"><i class="${config.iconClass}"></i></div>
+                <div class="flex-grow-1">
+                    <strong>${config.title}</strong>
+                    ${this.escapeHtml(message)}
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            <div class="progress mt-2" style="height: 3px;">
+                <div class="progress-bar progress-bar-striped progress-bar-animated"
+                     role="progressbar"
+                     style="width: 100%; transition: width ${transitionDuration}s linear;">
+                </div>
+            </div>
+        `;
+        messagesContainer.appendChild(alertEl);
+
+        const progressBar = alertEl.querySelector('.progress-bar');
+        setTimeout(() => {
+            if (progressBar) progressBar.style.width = '0%';
+        }, 100);
+
+        let autoCloseTimer = setTimeout(() => {
+            MessageManager.closeGlobalMessage(alertEl);
+        }, timeout);
+
+        alertEl.addEventListener('mouseenter', () => {
+            clearTimeout(autoCloseTimer);
+            if (progressBar) progressBar.style.animationPlayState = 'paused';
+        });
+
+        alertEl.addEventListener('mouseleave', () => {
+            if (progressBar) progressBar.style.animationPlayState = 'running';
+            autoCloseTimer = setTimeout(() => {
+                MessageManager.closeGlobalMessage(alertEl);
+            }, 2000);
+        });
+
+        const closeButton = alertEl.querySelector('.btn-close');
+        if (closeButton) {
+            closeButton.addEventListener('click', () => {
+                clearTimeout(autoCloseTimer);
+                MessageManager.closeGlobalMessage(alertEl);
+            });
+        }
+        return alertEl;
+    }
+
+    static closeGlobalMessage(alert) {
+        if (!alert) return;
+        alert.classList.add('fade-out');
+        setTimeout(() => {
+            if (alert.parentNode) {
+                alert.parentNode.removeChild(alert);
+            }
+        }, 500);
     }
 
     static escapeHtml(text) {

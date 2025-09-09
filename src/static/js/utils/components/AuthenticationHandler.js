@@ -1,4 +1,7 @@
 import { isLoginRedirectResponse, isLoginRedirectErrorLike } from '../httpAuth.js';
+import { MessageManager } from './MessageManager.js';
+
+let isLogoutHandled = false;
 
 export class AuthenticationHandler {
 
@@ -32,6 +35,35 @@ export class AuthenticationHandler {
         if (messageManager && messageContainer) {
             messageManager.showMessage(message, 'warning', messageContainer);
         }
+    }
+
+    static handleGlobalLogout(authBroadcastManager, options = {}) {
+        if (isLogoutHandled) {
+            return;
+        }
+        isLogoutHandled = true;
+
+        const { redirectUrl = null, redirectTimeout = 3000 } = options;
+
+        const message = redirectUrl
+            ? 'Your session has expired. You will be redirected to the login page.'
+            : 'Your session has expired. Please log in again.';
+
+        MessageManager.showGlobalMessage(message, 'warning', { timeout: redirectTimeout });
+
+        if (authBroadcastManager) {
+            authBroadcastManager.broadcast('logout_detected', {});
+        }
+
+        if (redirectUrl) {
+            setTimeout(() => {
+                window.location.href = redirectUrl;
+            }, redirectTimeout);
+        }
+
+        setTimeout(() => {
+            isLogoutHandled = false;
+        }, 500);
     }
 
     static resetAuthenticationState(component, resetCallback = null) {
