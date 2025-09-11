@@ -1,7 +1,8 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
-from django.db.models import Prefetch
+from django.core.paginator import Paginator
+from django.db.models import Prefetch, Case, When
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.views.generic import (
@@ -12,7 +13,9 @@ from django.views.generic import (
     UpdateView,
     DeleteView
 )
+from numpy import ceil
 
+from fixtures.utils import get_approximate_table_count
 from .forms import ProductForm
 from .mixins import ProductAccessMixin, ProductQuerysetMixin, ProductFilterContextMixin
 from .models import (
@@ -25,6 +28,7 @@ from .models import (
     UsageType,
 )
 from apps.ratings.models import Rating, Like, Dislike
+from .paginator import AdaptiveKeysPaginator, QuerySetWithCount
 from .query_builders.product_query import ProductQuerysetBuilder
 
 User = get_user_model()
@@ -45,10 +49,10 @@ class HomeView(TemplateView):
             usage_types_count=UsageType.objects.count(),
         )
 
-        users_count = User.objects.count()
-        ratings_count = Rating.objects.count()
-        likes_count = Like.objects.count()
-        dislikes_count = Dislike.objects.count()
+        users_count = get_approximate_table_count(User)
+        ratings_count = get_approximate_table_count(Rating)
+        likes_count = get_approximate_table_count(Like)
+        dislikes_count = get_approximate_table_count(Dislike)
         total_interactions = ratings_count + likes_count + dislikes_count
 
         context.update(
@@ -73,6 +77,7 @@ class ProductListView(
     context_object_name = "products"
     paginate_by = 24
     PER_PAGE_ALLOWED = {"8", "12", "16", "20", "24"}
+    MIN_PAGES_FOR_ADAPTIVE_PAGINATION = 100
 
     def get_paginate_by(self, queryset):
         per_page = self.request.GET.get("per_page")
@@ -101,8 +106,51 @@ class ProductListView(
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context.update(self.get_filter_context_data(self.get_base_queryset()))
+        context.update(self.get_filter_context_data(self.get_options_scope_queryset()))
         return context
+
+    def get_paginator(
+            self, queryset, per_page, orphans=0, allow_empty_first_page=True, **kwargs
+    ):
+        count = queryset.count()
+        wrapped_queryset = QuerySetWithCount(queryset, count)
+
+        num_pages = ceil(count / per_page) if count > 0 else 0
+
+        if num_pages <= self.MIN_PAGES_FOR_ADAPTIVE_PAGINATION:
+            return Paginator(wrapped_queryset, per_page, orphans, allow_empty_first_page)
+
+        def data_strategy(page_number, page_size):
+            builder = ProductQuerysetBuilder()
+            light_queryset = (builder
+                              .set_queryset_and_request(self.use_projection(), self.request)
+                              .filter_by_category(self.apply_category_filters_queryset)
+                              .filter_by_gender()
+                              .filter_by_season()
+                              .filter_by_price_range()
+                              .filter_by_availability()
+                              .filter_by_discount()
+                              .apply_ordering()
+                              .build())
+
+            start = (page_number - 1) * page_size
+            end = start + page_size
+            pks = list(light_queryset.values_list('pk', flat=True)[start:end])
+
+            if not pks:
+                return []
+
+            heavy_queryset = self.get_base_queryset().filter(pk__in=pks)
+            preserved_order = Case(*[When(pk=pk, then=pos) for pos, pk in enumerate(pks)])
+            return heavy_queryset.order_by(preserved_order)
+
+        return AdaptiveKeysPaginator(
+            wrapped_queryset,
+            per_page,
+            orphans=orphans,
+            allow_empty_first_page=allow_empty_first_page,
+            data_strategy=data_strategy
+        )
 
 
 class ProductByMasterCategoryListView(ProductListView):

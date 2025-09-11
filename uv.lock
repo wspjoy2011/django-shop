@@ -72,6 +72,15 @@ wheels = [
 ]
 
 [[package]]
+name = "django-pgviews-redux"
+version = "0.11.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/7f/b6/6ffd824b89f15d7f67b293aaa6e0bf28319bd708dc2b18959a3467a73509/django_pgviews_redux-0.11.0.tar.gz", hash = "sha256:2d7f8d3619544a8bedadde5e685ab380b9baa04759e44ab6493b642beeb2dd31", size = 18504, upload-time = "2024-11-27T09:11:53.814Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5f/cd/349ce6ce7aa8b82be345493002d56ced7725f5f30c177ef7702b070778fa/django_pgviews_redux-0.11.0-py3-none-any.whl", hash = "sha256:5bbc4c429e2a12c8ccaa5f1b2d02a7ba1bce9a3bca493bf8ec1f9d502bb8667e", size = 18865, upload-time = "2024-11-27T09:11:52.584Z" },
+]
+
+[[package]]
 name = "django-shop-final-project"
 version = "0.1.0"
 source = { virtual = "." }
@@ -80,6 +89,7 @@ dependencies = [
     { name = "django-debug-toolbar" },
     { name = "django-extensions" },
     { name = "django-filter" },
+    { name = "django-pgviews-redux" },
     { name = "djangorestframework" },
     { name = "factory-boy" },
     { name = "faker" },
@@ -97,6 +107,7 @@ requires-dist = [
     { name = "django-debug-toolbar", specifier = ">=6.0.0" },
     { name = "django-extensions", specifier = ">=4.1" },
     { name = "django-filter", specifier = ">=25.1" },
+    { name = "django-pgviews-redux", specifier = ">=0.11.0" },
     { name = "djangorestframework", specifier = ">=3.16.1" },
     { name = "factory-boy", specifier = ">=3.3.3" },
     { name = "faker", specifier = ">=37.6.0" },

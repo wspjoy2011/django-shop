@@ -40,3 +40,32 @@ def copy_insert_data(model: type[models.Model], columns: List[str], data: List[t
             INSERT INTO {table_name} ({', '.join(columns)})
             SELECT {', '.join(columns)} FROM {temp_table_name};
         """)
+
+
+def get_approximate_table_count(model: type[models.Model]) -> int:
+    if connection.vendor != "postgresql":
+        return model.objects.count()
+
+    table_name = model._meta.db_table
+    with connection.cursor() as cursor:
+        cursor.execute(
+            "SELECT reltuples::bigint FROM pg_class WHERE relname = %s",
+            [table_name]
+        )
+        result = cursor.fetchone()
+        return result[0] if result else 0
+
+
+def analyze_table(model: type[models.Model]):
+    if connection.vendor != "postgresql":
+        return
+
+    table_name = model._meta.db_table
+    with connection.cursor() as cursor:
+        original_autocommit = connection.get_autocommit()
+        try:
+            connection.set_autocommit(True)
+            quoted_table_name = connection.schema_editor().quote_name(table_name)
+            cursor.execute(f"ANALYZE {quoted_table_name};")
+        finally:
+            connection.set_autocommit(original_autocommit)

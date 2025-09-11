@@ -70,11 +70,13 @@ INSTALLED_APPS = [
 
     # Pypi third apps
     'django_extensions',
+    'django_pgviews',
     'debug_toolbar',
     'rest_framework',
 
     # Project apps
     'apps.accounts',
+    'apps.api.rest',
     'apps.catalog',
     'apps.inventories',
     'apps.favorites',

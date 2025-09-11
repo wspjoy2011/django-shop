@@ -3,8 +3,8 @@ from django.db import models
 from django.urls import reverse
 from django_extensions.db.fields import AutoSlugField
 
+from apps.favorites.models import FavoriteItem, FavoriteCollection
 from .choices import SeasonChoices, GenderChoices
-from ..favorites.models import FavoriteItem, FavoriteCollection
 
 User = get_user_model()
 

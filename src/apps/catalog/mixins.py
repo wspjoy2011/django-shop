@@ -1,13 +1,15 @@
 from decimal import Decimal
 
 from django.contrib import messages
-from django.db.models import Prefetch, DecimalField, Max, Min, F, Exists, OuterRef
-from django.db.models.functions import Coalesce
+from django.db import models
+from django.db.models import Prefetch, F, Exists, OuterRef
+from django.http import HttpRequest
 from django.shortcuts import redirect
 from django.utils.http import urlencode
 from django.views import View
 
 from apps.catalog.models import Season
+from apps.catalog.pgviews import PriceRangesMV, GenderFilterOptionsMV
 from apps.favorites.models import FavoriteItem
 from apps.ratings.models import Rating, Like, Dislike
 
@@ -22,6 +24,8 @@ class ProductAccessMixin(View):
 
 
 class ProductQuerysetMixin:
+    request: HttpRequest
+    model: models.Model
 
     def get_base_queryset(self):
         user = self.request.user
@@ -39,7 +43,9 @@ class ProductQuerysetMixin:
             ),
             Prefetch(
                 'favorite_items',
-                queryset=FavoriteItem.objects.select_related('collection__user'),
+                queryset=FavoriteItem.objects.select_related('collection').only(
+                    'product_id', 'collection__user_id'
+                ),
                 to_attr='favorites_list'
             )
         ]
@@ -53,13 +59,32 @@ class ProductQuerysetMixin:
                 )
             )
 
-        return (
-            super()
-            .get_queryset()
+        queryset = (
+            self.model.objects.only(
+                "id",
+                "slug",
+                "image_url",
+                "product_display_name",
+                "product_id",
+                "year",
+                "gender",
+                "ratings_sum",
+                "ratings_count",
+
+                "article_type__name",
+                "base_colour__name",
+                "season__name",
+                "usage_type__name",
+                "inventory__is_active",
+                "inventory__stock_quantity",
+                "inventory__reserved_quantity",
+                "inventory__base_price",
+                "inventory__sale_price",
+                "inventory__currency__symbol",
+                "inventory__currency__decimals"
+            )
             .select_related(
                 "article_type",
-                "article_type__sub_category",
-                "article_type__sub_category__master_category",
                 "base_colour",
                 "season",
                 "usage_type",
@@ -69,8 +94,20 @@ class ProductQuerysetMixin:
             .prefetch_related(*prefetch_list)
         )
 
+        return queryset
+
+    def use_projection(self, only_fields = None):
+        if not only_fields:
+            meta = self.model._meta
+            ordering = list(meta.ordering)
+            only_fields = [f.lstrip('-') for f in ordering]
+
+        return self.model.objects.only(*only_fields)
+
 
 class ProductFilterContextMixin:
+    request: HttpRequest
+    kwargs: dict
 
     def get_filter_context_data(self, queryset):
         context = {}
@@ -86,9 +123,9 @@ class ProductFilterContextMixin:
         context["selected_availability"] = self._parse_csv_param("availability")
         context["selected_discount"] = self._parse_csv_param("discount")
 
-        context["price_range"] = self._get_price_range_context(queryset)
+        context["price_range"] = self._get_price_range_context()
 
-        context["gender_options"] = self._get_gender_options(queryset)
+        context["gender_options"] = self._get_gender_options()
         context["season_options"] = self._get_season_options(queryset)
         context["availability_options"] = self._get_availability_options(queryset)
         context["discount_options"] = self._get_discount_options(queryset)
@@ -101,26 +138,19 @@ class ProductFilterContextMixin:
         param_value = self.request.GET.get(param_name, "")
         return [item.strip() for item in param_value.split(",") if item.strip()]
 
-    def _get_price_range_context(self, queryset):
-        price_range = queryset.aggregate(
-            min_price=Min(
-                Coalesce(
-                    'inventory__sale_price',
-                    'inventory__base_price',
-                    output_field=DecimalField(max_digits=10, decimal_places=2),
-                )
-            ),
-            max_price=Max(
-                Coalesce(
-                    'inventory__sale_price',
-                    'inventory__base_price',
-                    output_field=DecimalField(max_digits=10, decimal_places=2),
-                )
-            ),
+    def _get_price_range_context(self):
+        master_slug = self.kwargs.get("master_slug")
+        sub_slug = self.kwargs.get("sub_slug")
+        article_slug = self.kwargs.get("article_slug")
+
+        min_price, max_price = PriceRangesMV.get_for_context(
+            master_slug=master_slug,
+            sub_slug=sub_slug,
+            article_slug=article_slug
         )
 
-        min_price = price_range['min_price'] or Decimal('0.00')
-        max_price = price_range['max_price'] or Decimal('1000.00')
+        min_price = min_price or Decimal('0.00')
+        max_price = max_price or Decimal('1000.00')
 
         current_min_price = self.request.GET.get("min_price", str(min_price))
         current_max_price = self.request.GET.get("max_price", str(max_price))
@@ -139,10 +169,15 @@ class ProductFilterContextMixin:
             "current_max": float(current_max_price)
         }
 
-    @staticmethod
-    def _get_gender_options(queryset):
-        return list(
-            queryset.values_list("gender", flat=True).distinct().order_by("gender")
+    def _get_gender_options(self):
+        master_slug = self.kwargs.get("master_slug")
+        sub_slug = self.kwargs.get("sub_slug")
+        article_slug = self.kwargs.get("article_slug")
+
+        return GenderFilterOptionsMV.get_for_context(
+            master_slug=master_slug,
+            sub_slug=sub_slug,
+            article_slug=article_slug
         )
 
     @staticmethod

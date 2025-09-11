@@ -7,4 +7,4 @@ python manage.py makemigrations
 echo "Applying migrations..."
 python manage.py migrate --noinput
 
-echo "Migrations completed successfully!"
+echo "Migrations and view synchronization completed successfully!"

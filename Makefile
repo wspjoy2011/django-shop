@@ -81,6 +81,20 @@ rebuild-indexes: ## Rebuild all missing database indexes from model definitions
 	@echo "Index rebuild completed!"
 	@echo "========================================="
 
+rebuild-pgviews: ## Rebuild and refresh all Postgres materialized views
+	@echo "========================================="
+	@echo "Postgres Views Rebuild Process"
+	@echo "========================================="
+	@echo "Starting database..."
+	@docker compose --env-file $(ENV_FILE) up -d --wait --wait-timeout 60 db
+	@echo "Running pgviews rebuild..."
+	@docker compose --env-file $(ENV_FILE) run --rm -e USE_PGBOUNCER=false web rebuild-pgviews.sh
+	@echo "Stopping database..."
+	@docker compose --env-file $(ENV_FILE) stop db
+	@echo "========================================="
+	@echo "Postgres views rebuild completed!"
+	@echo "========================================="
+
 # ============================================
 # Database Seeding Commands
 # ============================================

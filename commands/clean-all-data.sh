@@ -68,6 +68,16 @@ echo "-----------------------------------------"
 python manage.py database_stats
 
 echo ""
+echo "Updating PostgreSQL statistics after cleanup..."
+echo "-----------------------------------------"
+python manage.py update_stats
+
+echo "Refreshing materialized views with price ranges..."
+echo "-----------------------------------------"
+python manage.py refresh_db_views
+echo ""
+
+echo ""
 echo "========================================="
 echo "All Done! Database is now empty."
 echo "========================================="

@@ -1,9 +1,7 @@
 from decimal import Decimal
 
 from django.db.models import DecimalField, Case, When, FloatField, Value, Subquery, Avg, OuterRef, Q, F
-from django.db.models.functions import Coalesce, Cast
-
-from apps.ratings.models import Rating
+from django.db.models.functions import Cast
 
 
 class ProductQuerysetBuilder:
