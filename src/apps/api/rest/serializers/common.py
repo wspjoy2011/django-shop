@@ -10,6 +10,6 @@ class ValidationErrorResponseSerializer(serializers.Serializer):
     errors = serializers.DictField()
 
 
-class MessageErrorResponseSerializer(serializers.Serializer):
+class MessageResponseSerializer(serializers.Serializer):
     success = serializers.BooleanField(default=False)
     message = serializers.CharField()

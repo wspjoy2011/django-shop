@@ -9,7 +9,7 @@ from django.db import transaction
 
 from apps.catalog.models import Product
 from apps.ratings.models import Like, Dislike
-from ..serializers import ValidationErrorResponseSerializer, MessageErrorResponseSerializer
+from ..serializers import ValidationErrorResponseSerializer, MessageResponseSerializer
 
 
 class APIResponseMixin:
@@ -28,7 +28,7 @@ class APIResponseMixin:
             'success': False,
             'message': message
         }
-        serializer = MessageErrorResponseSerializer(data=error_data)
+        serializer = MessageResponseSerializer(data=error_data)
         serializer.is_valid(raise_exception=True)
         return Response(serializer.validated_data, status=status_code)
 

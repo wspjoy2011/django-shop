@@ -4,7 +4,6 @@ from . import views
 
 app_name = 'api'
 
-
 urlpatterns = [
     # Rating System APIs
     path(
@@ -29,6 +28,14 @@ urlpatterns = [
         'favorites/collections/',
         views.FavoriteCollectionCreateAPIView.as_view(),
         name='favorite_collection_create'),
+    path(
+        'favorites/collections/<int:collection_id>/',
+        views.FavoriteCollectionDeleteView.as_view(),
+        name='favorite_collection_delete'),
+    path(
+        'favorites/collections/<int:collection_id>/products/',
+        views.FavoriteCollectionClearView.as_view(),
+        name='favorite_collection_clear'),
     path(
         'favorites/collections/<int:collection_id>/set-default/',
         views.FavoriteCollectionSetDefaultAPIView.as_view(),

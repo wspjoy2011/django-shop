@@ -13,6 +13,7 @@ from ..serializers import (
     FavoriteCollectionCreateRequestSerializer,
     FavoriteCollectionCreateResponseSerializer,
     FavoriteCollectionSetDefaultResponseSerializer,
+    MessageResponseSerializer
 )
 from ..choices import FavoriteActionChoices
 
@@ -149,3 +150,38 @@ class FavoriteCollectionSetDefaultAPIView(BaseAPIView):
             FavoriteCollectionSetDefaultResponseSerializer,
             status.HTTP_200_OK
         )
+
+class FavoriteCollectionDeleteView(BaseAPIView):
+
+    def delete(self, request, *args, **kwargs):
+        collection_id = kwargs.get('collection_id')
+        collection = get_object_or_404(FavoriteCollection, pk=collection_id, user=request.user)
+
+        if collection.is_default:
+            return self.return_message_error(
+                'You cannot delete your default collection.'
+            )
+
+        if collection.favorite_items.exists():
+            return self.return_message_error(
+                'Collection is not empty. Please clear the items first or use the clear endpoint.',
+                status_code=status.HTTP_409_CONFLICT
+            )
+
+        collection.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class FavoriteCollectionClearView(BaseAPIView):
+
+    def delete(self, request, *args, **kwargs):
+        collection_id = kwargs.get('collection_id')
+        collection = get_object_or_404(FavoriteCollection, pk=collection_id, user=request.user)
+
+        items_deleted_count, _ = collection.favorite_items.all().delete()
+
+        response_data = {
+            'success': True,
+            'message': f'{items_deleted_count} items have been cleared from the collection.'
+        }
+        return self.return_success_response(response_data, MessageResponseSerializer)

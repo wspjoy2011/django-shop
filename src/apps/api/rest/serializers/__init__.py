@@ -17,7 +17,7 @@ from .favorites import (
 from .common import (
     ErrorResponseSerializer,
     ValidationErrorResponseSerializer,
-    MessageErrorResponseSerializer,
+    MessageResponseSerializer,
 )
 
 __all__ = [
@@ -38,5 +38,5 @@ __all__ = [
     # Common serializers
     'ErrorResponseSerializer',
     'ValidationErrorResponseSerializer',
-    'MessageErrorResponseSerializer',
+    'MessageResponseSerializer',
 ]
