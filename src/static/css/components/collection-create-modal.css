@@ -10,13 +10,14 @@
     align-items: center;
     justify-content: center;
     padding: 20px;
+    isolation: isolate;
 }
 
 .collection-create-modal.hidden {
     display: none;
 }
 
-.modal-overlay {
+.collection-create-modal .modal-overlay {
     position: absolute;
     top: 0;
     left: 0;
@@ -31,7 +32,7 @@
     animation: fadeIn 0.3s ease-out;
 }
 
-.modal-container {
+.collection-create-modal .modal-container {
     position: relative;
     background: #ffffff;
     border-radius: 20px;

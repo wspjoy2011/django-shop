@@ -1,0 +1,25 @@
+<div class="collection-delete-modal hidden" aria-hidden="true">
+  <div class="modal-overlay" tabindex="-1"></div>
+  <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
+    <div class="modal-header">
+      <h3 id="delete-modal-title" class="modal-title">Confirm Deletion</h3>
+      <button type="button" class="modal-close" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-icon">
+        <i class="fas fa-exclamation-triangle"></i>
+      </div>
+      <p>
+        The collection "<strong id="delete-collection-name"></strong>" is not empty.
+      </p>
+      <p class="text-muted">Are you sure you want to permanently delete it along with all its items?</p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary modal-cancel">Cancel</button>
+      <button type="button" class="btn btn-danger modal-confirm-delete">
+        <span class="btn-text">Yes, Delete</span>
+        <i class="fas fa-spinner fa-spin loading-spinner hidden"></i>
+      </button>
+    </div>
+  </div>
+</div>
