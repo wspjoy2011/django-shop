@@ -192,17 +192,7 @@ class FavoriteCollectionClearView(BaseAPIView):
 class UserFavoritesCountView(BaseAPIView):
 
     def get(self, request, *args, **kwargs):
-        user = request.user
-        count = 0
-
-        if not FavoriteCollection.objects.filter(user=user).exists():
-            return self.return_success_response(
-                data={'count': count},
-                serializer_class=UserFavoritesCountResponseSerializer,
-                status_code=status.HTTP_200_OK
-        )
-
-        count = FavoriteItem.objects.filter(collection__user=user).count()
+        count = FavoriteItem.objects.filter(collection__user=request.user).count()
 
         return self.return_success_response(
             data={'count': count},
