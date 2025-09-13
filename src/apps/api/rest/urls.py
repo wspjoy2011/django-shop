@@ -40,4 +40,9 @@ urlpatterns = [
         'favorites/collections/<int:collection_id>/set-default/',
         views.FavoriteCollectionSetDefaultAPIView.as_view(),
         name='favorite_collection_set_default'),
+    path(
+        'favorites/collections/count/',
+        views.UserFavoritesCountView.as_view(),
+        name='user_favorites_count'),
+
 ]

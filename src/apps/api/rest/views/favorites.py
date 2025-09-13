@@ -13,7 +13,8 @@ from ..serializers import (
     FavoriteCollectionCreateRequestSerializer,
     FavoriteCollectionCreateResponseSerializer,
     FavoriteCollectionSetDefaultResponseSerializer,
-    MessageResponseSerializer
+    MessageResponseSerializer,
+    UserFavoritesCountResponseSerializer
 )
 from ..choices import FavoriteActionChoices
 
@@ -151,6 +152,7 @@ class FavoriteCollectionSetDefaultAPIView(BaseAPIView):
             status.HTTP_200_OK
         )
 
+
 class FavoriteCollectionDeleteView(BaseAPIView):
 
     def delete(self, request, *args, **kwargs):
@@ -185,3 +187,25 @@ class FavoriteCollectionClearView(BaseAPIView):
             'message': f'{items_deleted_count} items have been cleared from the collection.'
         }
         return self.return_success_response(response_data, MessageResponseSerializer)
+
+
+class UserFavoritesCountView(BaseAPIView):
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        count = 0
+
+        if not FavoriteCollection.objects.filter(user=user).exists():
+            return self.return_success_response(
+                data={'count': count},
+                serializer_class=UserFavoritesCountResponseSerializer,
+                status_code=status.HTTP_200_OK
+        )
+
+        count = FavoriteItem.objects.filter(collection__user=user).count()
+
+        return self.return_success_response(
+            data={'count': count},
+            serializer_class=UserFavoritesCountResponseSerializer,
+            status_code=status.HTTP_200_OK
+        )

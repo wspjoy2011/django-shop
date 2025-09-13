@@ -9,15 +9,12 @@ class FavoriteCollectionCreateRequestSerializer(serializers.Serializer):
     is_public = serializers.BooleanField(required=False, default=False)
     is_default = serializers.BooleanField(required=False, default=False)
 
-    def validate_name(self, value):
-        if not value or not value.strip():
-            raise serializers.ValidationError('Collection name is required')
-        return value.strip().capitalize()
-
     def validate_description(self, value):
+        value = value.strip()
+
         if value and len(value) > 1000:
             raise serializers.ValidationError('Description is too long')
-        return value.strip() if value else ''
+        return value
 
 
 class FavoriteToggleResponseSerializer(serializers.Serializer):
@@ -48,3 +45,8 @@ class FavoriteCollectionCreateResponseSerializer(serializers.Serializer):
 class FavoriteCollectionSetDefaultResponseSerializer(serializers.Serializer):
     success = serializers.BooleanField(default=True)
     message = serializers.CharField()
+
+
+class UserFavoritesCountResponseSerializer(serializers.Serializer):
+    success = serializers.BooleanField(default=True)
+    count = serializers.IntegerField()

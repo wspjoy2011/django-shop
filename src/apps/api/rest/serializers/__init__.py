@@ -12,6 +12,7 @@ from .favorites import (
     FavoriteCollectionDataSerializer,
     FavoriteCollectionCreateResponseSerializer,
     FavoriteCollectionSetDefaultResponseSerializer,
+    UserFavoritesCountResponseSerializer
 )
 
 from .common import (
@@ -34,6 +35,7 @@ __all__ = [
     'FavoriteCollectionDataSerializer',
     'FavoriteCollectionCreateResponseSerializer',
     'FavoriteCollectionSetDefaultResponseSerializer',
+    'UserFavoritesCountResponseSerializer',
 
     # Common serializers
     'ErrorResponseSerializer',
