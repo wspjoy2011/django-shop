@@ -1179,3 +1179,36 @@ header .dropdown-menu .dropdown-item,
     outline: 2px solid #dc354540;
     border-radius: 50%;
 }
+
+.clear-collection-btn {
+    border: none !important;
+    background: transparent !important;
+    font-size: 1.1rem;
+    line-height: 1;
+    vertical-align: middle;
+    transition: all 0.2s ease-in-out;
+}
+
+.clear-collection-btn .fa-broom {
+    transition: color 0.2s ease-in-out, transform 0.2s ease-in-out;
+}
+
+.clear-collection-btn:hover .fa-broom {
+    transform: scale(1.25);
+    color: #fd7e14 !important;
+}
+
+.clear-collection-btn:disabled {
+    cursor: wait;
+}
+
+.clear-collection-btn:disabled .fa-broom {
+    animation: none;
+    transform: none;
+    color: #6c757d !important;
+}
+
+.clear-collection-btn:focus-visible {
+    outline: 2px solid #fd7e1440;
+    border-radius: 50%;
+}

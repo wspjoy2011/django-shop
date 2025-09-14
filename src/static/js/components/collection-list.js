@@ -10,7 +10,6 @@ class CollectionList extends BaseComponent {
         super({broadcastChannelName: 'collection-updates'});
 
         this.selectors = {
-            // Create Modal
             createButton: '.btn-create-list',
             createModal: '.collection-create-modal',
             createForm: '.collection-create-form',
@@ -20,15 +19,11 @@ class CollectionList extends BaseComponent {
             nameInput: '#collection-name',
             descriptionInput: '#collection-description',
             errorContainer: '.form-errors',
-
-            // Delete Modal
             deleteModal: '.collection-delete-modal',
             deleteCloseButton: '.collection-delete-modal .modal-close',
             deleteCancelButton: '.collection-delete-modal .modal-cancel',
             deleteConfirmButton: '.modal-confirm-delete',
             deleteCollectionName: '#delete-collection-name',
-
-            // Common
             overlay: '.modal-overlay',
             loadingSpinner: '.loading-spinner',
             collectionsGrid: '#collections-grid',
@@ -37,6 +32,7 @@ class CollectionList extends BaseComponent {
             actions: '.collection-actions',
             setDefaultButton: '.set-default-btn',
             deleteButton: '.delete-collection-btn',
+            clearButton: '.clear-collection-btn',
             templateId: 'collection-card-template',
         };
 
@@ -158,6 +154,7 @@ class CollectionList extends BaseComponent {
         document.addEventListener('click', (e) => {
             const setDefaultButton = e.target.closest(this.selectors.setDefaultButton);
             const deleteButton = e.target.closest(this.selectors.deleteButton);
+            const clearButton = e.target.closest(this.selectors.clearButton);
             const component = e.target.closest(this.selectors.card);
 
             if (e.target.closest(this.selectors.createButton)) {
@@ -174,6 +171,12 @@ class CollectionList extends BaseComponent {
                 const collectionId = component.getAttribute('data-collection-id');
                 if (collectionId) {
                     void this.handleDeleteCollection(component, collectionId);
+                }
+            } else if (clearButton && component) {
+                e.preventDefault();
+                const collectionId = clearButton.getAttribute('data-collection-id');
+                if (collectionId) {
+                    void this.handleClearCollection(component, collectionId, clearButton);
                 }
             }
         });
@@ -258,6 +261,86 @@ class CollectionList extends BaseComponent {
             originalIcon.className = originalClass;
             button.disabled = false;
         }
+    }
+
+    async handleClearCollection(component, collectionId, button) {
+        const clearUrl = this.clearUrl.replace('{id}', collectionId);
+        const collectionName = this.getCollectionNameFromTitle(component.querySelector('.collection-title'));
+
+        const originalIcon = button.querySelector('i');
+        const originalClass = originalIcon.className;
+        originalIcon.className = 'fas fa-spinner fa-spin text-muted';
+        button.disabled = true;
+
+        try {
+            await this.httpClient.handleResponse(
+                await this.httpClient.sendRequest(clearUrl, {method: 'DELETE'}),
+                component,
+                {
+                    onLoginRedirect: () => this.handleLogoutDetection(),
+                    onSuccess: (data) => {
+                        if (data.success) {
+                            this.handleClearSuccess(component, collectionId, collectionName, data.message);
+                        } else {
+                            MessageManager.showGlobalMessage(
+                                data.message || 'Failed to clear collection', 'error'
+                            );
+                        }
+                    },
+                    onError: (error) => {
+                        MessageManager.showGlobalMessage('Network error. Please try again.', 'error');
+                    }
+                }
+            );
+        } catch (error) {
+            if (AuthenticationHandler.isAuthenticationError(error)) {
+                this.handleLogoutDetection();
+            } else {
+                MessageManager.showGlobalMessage('A network error occurred while trying to clear the collection.', 'error');
+            }
+        } finally {
+            originalIcon.className = originalClass;
+            button.disabled = false;
+        }
+    }
+
+    handleClearSuccess(component, collectionId, collectionName, message) {
+        const itemsCountElement = component.querySelector('.collection-items-count');
+        if (itemsCountElement) {
+            itemsCountElement.textContent = 'Items count: 0';
+        }
+
+        const sliderElement = component.querySelector('.collection-slider');
+        if (sliderElement) {
+            const emptyElement = document.createElement('div');
+            emptyElement.className = 'empty-collection';
+            emptyElement.innerHTML = `
+                <div class="text-center py-5">
+                  <i class="fas fa-heart-broken fa-3x text-muted mb-3"></i>
+                  <p class="text-muted">Collection is empty</p>
+                  <a href="/catalog/" class="btn btn-sm btn-outline-primary">Add Products</a>
+                </div>
+            `;
+            sliderElement.replaceWith(emptyElement);
+        }
+
+        const titleElement = component.querySelector('.collection-title');
+        const isDefault = this.getCollectionIsDefault(component);
+        if (titleElement) {
+            this.rebuildCollectionTitle(titleElement, collectionId, isDefault, collectionName, false);
+        }
+
+        MessageManager.showGlobalMessage(
+            message || `Collection "${collectionName}" has been cleared successfully.`, 'success'
+        );
+
+        const collection = {
+            id: collectionId,
+            name: collectionName,
+            is_default: isDefault,
+            total_items_count: 0
+        };
+        this.broadcastManager.broadcast('collection_updated', {collection});
     }
 
     async handleDeleteCollection(component, collectionId) {
@@ -347,12 +430,14 @@ class CollectionList extends BaseComponent {
             const titleElement = card.querySelector('.collection-title');
             if (!titleElement) return;
             const collectionName = this.getCollectionNameFromTitle(titleElement);
-            this.rebuildCollectionTitle(titleElement, cardId, cardId === newDefaultCollectionId, collectionName);
+            const itemsCountElement = card.querySelector('.collection-items-count');
+            const hasItems = itemsCountElement && parseInt(itemsCountElement.textContent.replace('Items count: ', '')) > 0;
+            this.rebuildCollectionTitle(titleElement, cardId, cardId === newDefaultCollectionId, collectionName, hasItems);
         });
         this.removeOrphanSetDefaultButtons();
     }
 
-    rebuildCollectionTitle(titleElement, collectionId, isDefault, collectionName) {
+    rebuildCollectionTitle(titleElement, collectionId, isDefault, collectionName, hasItems = true) {
         if (!titleElement) return;
         while (titleElement.firstChild) {
             titleElement.removeChild(titleElement.firstChild);
@@ -363,6 +448,28 @@ class CollectionList extends BaseComponent {
             badge.className = 'badge bg-primary ms-2';
             badge.textContent = 'Default';
             titleElement.appendChild(badge);
+
+            if (hasItems) {
+                const templateElement = document.getElementById(this.selectors.templateId);
+                if (templateElement && templateElement.textContent) {
+                    const templateContainer = document.createElement('div');
+                    templateContainer.innerHTML = templateElement.textContent.trim();
+                    const templateActions = templateContainer.querySelector('.collection-actions');
+                    if (templateActions) {
+                        const actions = document.createElement('span');
+                        actions.className = 'collection-actions';
+
+                        const clearButton = templateActions.querySelector('.clear-collection-btn');
+                        if (clearButton) {
+                            const clonedClearButton = clearButton.cloneNode(true);
+                            clonedClearButton.setAttribute('data-collection-id', String(collectionId));
+                            actions.appendChild(clonedClearButton);
+                        }
+
+                        titleElement.appendChild(actions);
+                    }
+                }
+            }
         } else {
             const templateElement = document.getElementById(this.selectors.templateId);
             if (!templateElement || !templateElement.textContent) return;
@@ -374,8 +481,21 @@ class CollectionList extends BaseComponent {
             if (!templateActions) return;
 
             const actions = templateActions.cloneNode(true);
+
             actions.querySelectorAll('.set-default-btn, .delete-collection-btn')
                 .forEach(btn => btn.setAttribute('data-collection-id', String(collectionId)));
+
+            if (!hasItems) {
+                const clearButton = actions.querySelector('.clear-collection-btn');
+                if (clearButton) {
+                    clearButton.remove();
+                }
+            } else {
+                const clearButton = actions.querySelector('.clear-collection-btn');
+                if (clearButton) {
+                    clearButton.setAttribute('data-collection-id', String(collectionId));
+                }
+            }
 
             titleElement.appendChild(actions);
         }
@@ -436,7 +556,9 @@ class CollectionList extends BaseComponent {
                 if (badge && badge.textContent.trim() === 'Default') {
                     const cardId = card.getAttribute('data-collection-id');
                     const collectionName = this.getCollectionNameFromTitle(titleElement);
-                    this.rebuildCollectionTitle(titleElement, cardId, false, collectionName);
+                    const itemsCountElement = card.querySelector('.collection-items-count');
+                    const hasItems = itemsCountElement && parseInt(itemsCountElement.textContent.replace('Items count: ', '')) > 0;
+                    this.rebuildCollectionTitle(titleElement, cardId, false, collectionName, hasItems);
                 }
             }
         });
@@ -457,7 +579,8 @@ class CollectionList extends BaseComponent {
         cardElement.setAttribute('data-collection-id', String(collection.id));
         cardElement.dataset.authenticated = 'true';
 
-        this.rebuildCollectionTitle(cardElement.querySelector('.collection-title'), collection.id, collection.is_default, collection.name);
+        const hasItems = collection.total_items_count > 0;
+        this.rebuildCollectionTitle(cardElement.querySelector('.collection-title'), collection.id, collection.is_default, collection.name, hasItems);
 
         const itemsCountElement = cardElement.querySelector('.collection-items-count');
         if (itemsCountElement) {
@@ -664,7 +787,6 @@ class CollectionList extends BaseComponent {
             this.cssClasses
         );
     }
-
 
     setDeleteModalLoadingState(isLoading) {
         const confirmButton = this.deleteModal.querySelector(this.selectors.deleteConfirmButton);

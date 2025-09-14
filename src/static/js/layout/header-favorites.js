@@ -29,6 +29,7 @@ class HeaderFavoritesHandler extends BaseComponent {
         const updateHandler = () => this.fetchAndUpdateCount();
         this.broadcastManager.subscribe('favorite_updated', updateHandler);
         this.collectionUpdatesManager.subscribe('collection_deleted', updateHandler);
+        this.collectionUpdatesManager.subscribe('collection_updated', updateHandler);
     }
 
     setupAuthBroadcastSubscriptions() {
@@ -84,10 +85,7 @@ class HeaderFavoritesHandler extends BaseComponent {
 
             if (!bubble) {
                 bubble = this.createBubble();
-                const anchor = container.querySelector('a');
-                if (anchor) {
-                    anchor.appendChild(bubble);
-                }
+                container.appendChild(bubble);
             }
 
             bubble.textContent = count;
