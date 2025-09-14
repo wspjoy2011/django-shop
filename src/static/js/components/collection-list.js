@@ -24,6 +24,8 @@ class CollectionList extends BaseComponent {
             deleteCancelButton: '.collection-delete-modal .modal-cancel',
             deleteConfirmButton: '.modal-confirm-delete',
             deleteCollectionName: '#delete-collection-name',
+            deleteModalTitle: '#delete-modal-title',
+            deleteModalText: '.delete-modal-text',
             overlay: '.modal-overlay',
             loadingSpinner: '.loading-spinner',
             collectionsGrid: '#collections-grid',
@@ -49,6 +51,7 @@ class CollectionList extends BaseComponent {
 
         this.httpClient = new AuthenticatedHttpClient();
         this.currentDeleteCollectionId = null;
+        this.currentModalMode = null;
         this.focusedElementBeforeModal = null;
         this.init();
     }
@@ -208,7 +211,7 @@ class CollectionList extends BaseComponent {
                     this.closeDeleteModal();
                 } else if (e.target.closest(this.selectors.deleteConfirmButton)) {
                     e.preventDefault();
-                    void this.handleDeleteConfirm();
+                    void this.handleModalConfirm();
                 }
             });
         }
@@ -264,44 +267,10 @@ class CollectionList extends BaseComponent {
     }
 
     async handleClearCollection(component, collectionId, button) {
-        const clearUrl = this.clearUrl.replace('{id}', collectionId);
         const collectionName = this.getCollectionNameFromTitle(component.querySelector('.collection-title'));
-
-        const originalIcon = button.querySelector('i');
-        const originalClass = originalIcon.className;
-        originalIcon.className = 'fas fa-spinner fa-spin text-muted';
-        button.disabled = true;
-
-        try {
-            await this.httpClient.handleResponse(
-                await this.httpClient.sendRequest(clearUrl, {method: 'DELETE'}),
-                component,
-                {
-                    onLoginRedirect: () => this.handleLogoutDetection(),
-                    onSuccess: (data) => {
-                        if (data.success) {
-                            this.handleClearSuccess(component, collectionId, collectionName, data.message);
-                        } else {
-                            MessageManager.showGlobalMessage(
-                                data.message || 'Failed to clear collection', 'error'
-                            );
-                        }
-                    },
-                    onError: (error) => {
-                        MessageManager.showGlobalMessage('Network error. Please try again.', 'error');
-                    }
-                }
-            );
-        } catch (error) {
-            if (AuthenticationHandler.isAuthenticationError(error)) {
-                this.handleLogoutDetection();
-            } else {
-                MessageManager.showGlobalMessage('A network error occurred while trying to clear the collection.', 'error');
-            }
-        } finally {
-            originalIcon.className = originalClass;
-            button.disabled = false;
-        }
+        this.currentDeleteCollectionId = collectionId;
+        this.currentModalMode = 'clear';
+        this.openDeleteModal(collectionName, 'clear');
     }
 
     handleClearSuccess(component, collectionId, collectionName, message) {
@@ -357,11 +326,8 @@ class CollectionList extends BaseComponent {
                 this.broadcastCollectionDeleted(collectionId, collectionName);
             } else if (response.status === 409) {
                 this.currentDeleteCollectionId = collectionId;
-                const collectionNameElement = this.deleteModal.querySelector(this.selectors.deleteCollectionName);
-                if (collectionNameElement) {
-                    collectionNameElement.textContent = collectionName;
-                }
-                this.openDeleteModal();
+                this.currentModalMode = 'delete';
+                this.openDeleteModal(collectionName, 'delete');
             } else {
                 const errorData = await response.json();
                 MessageManager.showGlobalMessage(errorData.message || 'Failed to delete collection.', 'error');
@@ -372,6 +338,53 @@ class CollectionList extends BaseComponent {
             } else {
                 MessageManager.showGlobalMessage('A network error occurred while trying to delete the collection.', 'error');
             }
+        }
+    }
+
+    async handleModalConfirm() {
+        if (!this.currentDeleteCollectionId || !this.currentModalMode) return;
+
+        if (this.currentModalMode === 'clear') {
+            await this.handleClearConfirm();
+        } else if (this.currentModalMode === 'delete') {
+            await this.handleDeleteConfirm();
+        }
+    }
+
+    async handleClearConfirm() {
+        if (!this.currentDeleteCollectionId) return;
+
+        const collectionId = this.currentDeleteCollectionId;
+        const clearUrl = this.clearUrl.replace('{id}', collectionId);
+
+        const collectionCard = ComponentFinder.findByCollectionId(collectionId, this.selectors.card)[0];
+        const collectionName = collectionCard ? this.getCollectionNameFromTitle(collectionCard.querySelector('.collection-title')) : 'Collection';
+
+        this.setDeleteModalLoadingState(true);
+
+        try {
+            const response = await this.httpClient.sendRequest(clearUrl, {method: 'DELETE'});
+
+            if (response.ok) {
+                const data = await response.json();
+                if (collectionCard) {
+                    this.handleClearSuccess(collectionCard, collectionId, collectionName, data.message);
+                }
+                this.closeDeleteModal();
+            } else {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to clear collection.');
+            }
+
+        } catch (error) {
+            if (AuthenticationHandler.isAuthenticationError(error)) {
+                this.handleLogoutDetection();
+            } else {
+                MessageManager.showGlobalMessage(error.message || 'Failed to clear collection. Please try again.', 'error');
+                this.closeDeleteModal();
+            }
+        } finally {
+            this.setDeleteModalLoadingState(false);
         }
     }
 
@@ -428,10 +441,13 @@ class CollectionList extends BaseComponent {
         allCollectionCards.forEach(card => {
             const cardId = card.getAttribute('data-collection-id');
             const titleElement = card.querySelector('.collection-title');
+
             if (!titleElement) return;
+
             const collectionName = this.getCollectionNameFromTitle(titleElement);
             const itemsCountElement = card.querySelector('.collection-items-count');
             const hasItems = itemsCountElement && parseInt(itemsCountElement.textContent.replace('Items count: ', '')) > 0;
+
             this.rebuildCollectionTitle(titleElement, cardId, cardId === newDefaultCollectionId, collectionName, hasItems);
         });
         this.removeOrphanSetDefaultButtons();
@@ -648,14 +664,18 @@ class CollectionList extends BaseComponent {
 
     openCreateModal() {
         if (!this.createModal) return;
+
         this.focusedElementBeforeModal = document.activeElement;
         this.createModal.classList.remove(this.cssClasses.hidden);
         this.createModal.removeAttribute('aria-hidden');
         document.body.classList.add(this.cssClasses.modalOpen);
+
         this.clearCreateForm();
         this.clearCreateMessages();
+
         const form = this.createModal.querySelector(this.selectors.createForm);
         const isEmptyState = !!document.querySelector(this.selectors.emptyState);
+
         if (form && form.is_default) {
             if (isEmptyState) {
                 form.is_default.checked = true;
@@ -671,26 +691,80 @@ class CollectionList extends BaseComponent {
 
     closeCreateModal() {
         if (!this.createModal) return;
+
         this.createModal.classList.add(this.cssClasses.hidden);
         this.createModal.setAttribute('aria-hidden', 'true');
         document.body.classList.remove(this.cssClasses.modalOpen);
+
         this.clearCreateForm();
         this.clearCreateMessages();
+
         if (this.focusedElementBeforeModal) {
             this.focusedElementBeforeModal.focus();
             this.focusedElementBeforeModal = null;
         }
     }
 
-    openDeleteModal() {
+    openDeleteModal(collectionName, mode = 'delete') {
         if (!this.deleteModal) return;
+
         this.focusedElementBeforeModal = document.activeElement;
         this.deleteModal.classList.remove(this.cssClasses.hidden);
         this.deleteModal.removeAttribute('aria-hidden');
         document.body.classList.add(this.cssClasses.modalOpen);
+
+        this.updateDeleteModalContent(collectionName, mode);
+
         setTimeout(() => {
             this.deleteModal.querySelector(this.selectors.deleteConfirmButton)?.focus();
         }, 100);
+    }
+
+    updateDeleteModalContent(collectionName, mode) {
+        const collectionNameElement = this.deleteModal.querySelector(this.selectors.deleteCollectionName);
+        const titleElement = this.deleteModal.querySelector(this.selectors.deleteModalTitle);
+        const confirmButton = this.deleteModal.querySelector(this.selectors.deleteConfirmButton);
+
+        if (collectionNameElement) {
+            collectionNameElement.textContent = collectionName;
+        }
+
+        const modalBody = this.deleteModal.querySelector('.modal-body');
+        if (!modalBody) return;
+
+        const confirmationText = modalBody.querySelector('p.text-muted');
+
+        if (mode === 'clear') {
+            if (titleElement) {
+                titleElement.textContent = 'Clear Collection';
+            }
+            if (confirmButton) {
+                const btnText = confirmButton.querySelector('.btn-text');
+                if (btnText) {
+                    btnText.textContent = 'Yes, Clear Items';
+                }
+                confirmButton.className = confirmButton.className.replace('btn-danger', 'btn-warning');
+            }
+
+            if (confirmationText) {
+                confirmationText.innerHTML = 'Are you sure you want to permanently clear all items from this collection?';
+            }
+        } else {
+            if (titleElement) {
+                titleElement.textContent = 'Confirm Deletion';
+            }
+            if (confirmButton) {
+                const btnText = confirmButton.querySelector('.btn-text');
+                if (btnText) {
+                    btnText.textContent = 'Yes, Delete';
+                }
+                confirmButton.className = confirmButton.className.replace('btn-warning', 'btn-danger');
+            }
+
+            if (confirmationText) {
+                confirmationText.innerHTML = 'Are you sure you want to permanently delete it along with all its items?';
+            }
+        }
     }
 
     closeDeleteModal() {
@@ -699,6 +773,7 @@ class CollectionList extends BaseComponent {
         this.deleteModal.setAttribute('aria-hidden', 'true');
         document.body.classList.remove(this.cssClasses.modalOpen);
         this.currentDeleteCollectionId = null;
+        this.currentModalMode = null;
         if (this.focusedElementBeforeModal) {
             this.focusedElementBeforeModal.focus();
             this.focusedElementBeforeModal = null;
