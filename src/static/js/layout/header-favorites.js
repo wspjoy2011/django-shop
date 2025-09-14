@@ -1,57 +1,69 @@
-class HeaderFavoritesHandler {
+import { BaseComponent } from '../utils/components/BaseComponent.js';
+import { AuthenticatedHttpClient } from '../utils/http/AuthenticatedHttpClient.js';
+import { BroadcastManager } from '../utils/broadcastManager.js';
+
+class HeaderFavoritesHandler extends BaseComponent {
     constructor() {
+        super({ broadcastChannelName: 'favorite-updates' });
+
         this.selectors = {
             container: '.favorites-heart-container',
             heart: '.favorites-heart-filled, .favorites-heart-empty',
             bubble: '.favorites-count-bubble'
         };
 
+        this.countUrl = '/api/v1/favorites/collections/count/';
+        this.httpClient = new AuthenticatedHttpClient();
+        this.collectionUpdatesManager = BroadcastManager.createManager('collection-updates');
         this.init();
     }
 
-    init() {
-        this.setupBroadcastChannel();
-        this.initializeState();
-    }
-
-    setupBroadcastChannel() {
-        if (typeof BroadcastChannel !== 'undefined') {
-            this.broadcastChannel = new BroadcastChannel('favorite-updates');
-            this.broadcastChannel.addEventListener('message', (event) => {
-                this.handleBroadcastMessage(event.data);
-            });
+    bootstrapInitialState() {
+        const container = document.querySelector(this.selectors.container);
+        if (container) {
+            void this.fetchAndUpdateCount();
         }
     }
 
-    handleBroadcastMessage(data) {
-        if (!data || !data.type) return;
+    setupBroadcastSubscriptions() {
+        const updateHandler = () => this.fetchAndUpdateCount();
+        this.broadcastManager.subscribe('favorite_updated', updateHandler);
+        this.collectionUpdatesManager.subscribe('collection_deleted', updateHandler);
+    }
 
-        switch (data.type) {
-            case 'favorite_updated':
-                this.handleFavoriteUpdate(data);
-                break;
-            case 'logout_detected':
+    setupAuthBroadcastSubscriptions() {
+        this.authBroadcastManager.subscribe('logout_detected', this.handleLogout.bind(this));
+    }
+
+    async fetchAndUpdateCount() {
+        const container = document.querySelector(this.selectors.container);
+        if (!container) return;
+
+        try {
+            const response = await this.httpClient.sendRequest(this.countUrl, { method: 'GET' });
+            if (!response.ok) {
+                if (response.status === 401 || response.status === 403) {
+                    this.handleLogout();
+                }
+                return;
+            }
+            const data = await response.json();
+            if (data.success) {
+                const newCount = data.count;
+                const currentCount = this.getCurrentCount();
+                this.updateFavoritesDisplay(newCount);
+
+                if (newCount > currentCount) {
+                    this.showUpdateAnimation(true);
+                } else if (newCount < currentCount) {
+                    this.showUpdateAnimation(false);
+                }
+            }
+        } catch (error) {
+            if (error.name === 'AuthenticationError') {
                 this.handleLogout();
-                break;
+            }
         }
-    }
-
-    handleFavoriteUpdate(data) {
-        const {action, favoritesCount} = data;
-
-        const currentCount = this.getCurrentCount();
-        let newCount;
-
-        if (action === 'added') {
-            newCount = currentCount + 1;
-        } else if (action === 'removed') {
-            newCount = Math.max(0, currentCount - 1);
-        } else {
-            newCount = favoritesCount || 0;
-        }
-
-        this.updateFavoritesDisplay(newCount);
-        this.showUpdateAnimation(action === 'added');
     }
 
     handleLogout() {
@@ -72,7 +84,10 @@ class HeaderFavoritesHandler {
 
             if (!bubble) {
                 bubble = this.createBubble();
-                container.appendChild(bubble);
+                const anchor = container.querySelector('a');
+                if (anchor) {
+                    anchor.appendChild(bubble);
+                }
             }
 
             bubble.textContent = count;
@@ -106,7 +121,7 @@ class HeaderFavoritesHandler {
     getCurrentCount() {
         const bubble = document.querySelector(this.selectors.bubble);
         if (!bubble || bubble.style.display === 'none') return 0;
-        return parseInt(bubble.textContent) || 0;
+        return parseInt(bubble.textContent, 10) || 0;
     }
 
     updateTitle(count) {
@@ -133,14 +148,6 @@ class HeaderFavoritesHandler {
                 container.style.animation = '';
             }, 600);
         });
-    }
-
-    initializeState() {
-        const bubble = document.querySelector(this.selectors.bubble);
-        if (bubble) {
-            const count = parseInt(bubble.textContent) || 0;
-            this.updateTitle(count);
-        }
     }
 }
 

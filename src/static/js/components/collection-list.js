@@ -37,6 +37,7 @@ class CollectionList extends BaseComponent {
             actions: '.collection-actions',
             setDefaultButton: '.set-default-btn',
             deleteButton: '.delete-collection-btn',
+            templateId: 'collection-card-template',
         };
 
         this.cssClasses = {
@@ -146,16 +147,10 @@ class CollectionList extends BaseComponent {
 
     setupCreateModal() {
         this.createModal = document.querySelector(this.selectors.createModal);
-        if (!this.createModal) {
-            console.error('Collection create modal not found in DOM');
-        }
     }
 
     setupDeleteModal() {
         this.deleteModal = document.querySelector(this.selectors.deleteModal);
-        if (!this.deleteModal) {
-            console.error('Collection delete modal not found in DOM');
-        }
     }
 
     bindEvents() {
@@ -243,7 +238,9 @@ class CollectionList extends BaseComponent {
                         if (data.success) {
                             this.handleSetDefaultSuccess(collectionId, data.message);
                         } else {
-                            MessageManager.showGlobalMessage(data.message || 'Failed to set collection as default', 'error');
+                            MessageManager.showGlobalMessage(
+                                data.message || 'Failed to set collection as default', 'error'
+                            );
                         }
                     },
                     onError: (error) => {
@@ -325,7 +322,6 @@ class CollectionList extends BaseComponent {
             this.closeDeleteModal();
 
         } catch (error) {
-            console.error('Failed to confirm and delete collection:', error);
             if (AuthenticationHandler.isAuthenticationError(error)) {
                 this.handleLogoutDetection();
             } else {
@@ -368,22 +364,19 @@ class CollectionList extends BaseComponent {
             badge.textContent = 'Default';
             titleElement.appendChild(badge);
         } else {
-            const actions = document.createElement('span');
-            actions.className = 'collection-actions';
-            const starButton = document.createElement('button');
-            starButton.type = 'button';
-            starButton.className = 'btn btn-link p-0 ms-2 set-default-btn';
-            starButton.setAttribute('data-collection-id', String(collectionId));
-            starButton.title = 'Set as default collection';
-            starButton.innerHTML = '<i class="fas fa-star text-muted"></i>';
-            actions.appendChild(starButton);
-            const deleteButton = document.createElement('button');
-            deleteButton.type = 'button';
-            deleteButton.className = 'btn btn-link p-0 ms-2 delete-collection-btn';
-            deleteButton.setAttribute('data-collection-id', String(collectionId));
-            deleteButton.title = 'Delete collection';
-            deleteButton.innerHTML = '<i class="fas fa-trash-alt text-muted"></i>';
-            actions.appendChild(deleteButton);
+            const templateElement = document.getElementById(this.selectors.templateId);
+            if (!templateElement || !templateElement.textContent) return;
+
+            const templateContainer = document.createElement('div');
+            templateContainer.innerHTML = templateElement.textContent.trim();
+
+            const templateActions = templateContainer.querySelector('.collection-actions');
+            if (!templateActions) return;
+
+            const actions = templateActions.cloneNode(true);
+            actions.querySelectorAll('.set-default-btn, .delete-collection-btn')
+                .forEach(btn => btn.setAttribute('data-collection-id', String(collectionId)));
+
             titleElement.appendChild(actions);
         }
     }
@@ -403,34 +396,6 @@ class CollectionList extends BaseComponent {
         if (collectionCard) {
             collectionCard.remove();
         }
-
-        const remainingCards = document.querySelectorAll(this.selectors.card);
-        if (remainingCards.length === 0) {
-            this.showEmptyState();
-        }
-    }
-
-    showEmptyState() {
-        const grid = document.querySelector(this.selectors.collectionsGrid);
-        if (!grid) return;
-
-        const emptyStateHtml = `
-            <div class="empty-state text-center py-5">
-                <i class="fas fa-heart fa-4x text-muted mb-4"></i>
-                <h3 class="text-muted mb-3">You don't have any favorite lists yet</h3>
-                <p class="text-muted mb-4">Create your first list and add your favorite products</p>
-                <div class="d-flex gap-3 justify-content-center">
-                    <a href="/catalog/" class="btn btn-browse-products">
-                        <i class="fas fa-search me-2"></i>Browse Products
-                    </a>
-                    <button type="button" class="btn btn-create-list">
-                        <i class="fas fa-plus me-2"></i>Create List
-                    </button>
-                </div>
-            </div>
-        `;
-
-        grid.outerHTML = emptyStateHtml;
     }
 
     addCollectionToGrid(collection) {
@@ -469,7 +434,9 @@ class CollectionList extends BaseComponent {
             if (titleElement) {
                 const badge = titleElement.querySelector('.badge');
                 if (badge && badge.textContent.trim() === 'Default') {
-                    badge.remove();
+                    const cardId = card.getAttribute('data-collection-id');
+                    const collectionName = this.getCollectionNameFromTitle(titleElement);
+                    this.rebuildCollectionTitle(titleElement, cardId, false, collectionName);
                 }
             }
         });
@@ -553,7 +520,6 @@ class CollectionList extends BaseComponent {
                 return this.cloneExistingCard(templateCard, collection);
             }
         }
-        console.error('Cannot render card: No existing card or template found.');
         return null;
     }
 
@@ -639,7 +605,6 @@ class CollectionList extends BaseComponent {
                 }
             );
         } catch (error) {
-            console.error("Collection creation form submission failed:", error);
             if (AuthenticationHandler.isAuthenticationError(error)) {
                 this.handleLogoutDetection();
             } else {
@@ -665,7 +630,6 @@ class CollectionList extends BaseComponent {
     handleCreateSuccess(data) {
         const {collection, message} = data;
         if (!collection) {
-            console.error("handleCreateSuccess called but no collection found in data:", data);
             this.handleCreateErrors({non_field_errors: ['Invalid response from server.']});
             return;
         }

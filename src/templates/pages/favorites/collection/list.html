@@ -100,11 +100,9 @@
   {% include 'components/favorites/collection_create_modal.html' %}
   {% include 'components/favorites/collection_delete_confirmation_modal.html' %}
 
-  <!-- Hidden template for JavaScript (only needed when no collections exist) -->
-  {% if not has_collections %}
-    <script type="text/template" id="collection-card-template">
-      {% include 'components/favorites/collection_card_empty_template.html' %}
-    </script>
-  {% endif %}
+  <!-- Hidden template for JavaScript -->
+  <script type="text/template" id="collection-card-template">
+    {% include 'components/favorites/collection_card_empty_template.html' %}
+  </script>
 
 {% endblock %}

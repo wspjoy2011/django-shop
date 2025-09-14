@@ -12,9 +12,10 @@ class FavoriteButtonHandler extends BaseComponent {
         this.selectors = {
             component: '.favorite-component',
             button: '.favorite-btn',
-            icon: '.favorite-icon',
+            icon: '.favorite-star',
             count: '.favorite-count',
-            messages: '.favorite-messages-container'
+            messages: '.favorite-messages-container',
+            container: '.favorite-container'
         };
 
         this.cssClasses = {
@@ -34,8 +35,8 @@ class FavoriteButtonHandler extends BaseComponent {
     }
 
     setupAuthBroadcastSubscriptions() {
-        this.authBroadcastManager.subscribe('logout_detected', (data) => {
-            this.handleLogoutMessage(data);
+        this.authBroadcastManager.subscribe('logout_detected', () => {
+            this.handleLogoutMessage();
         });
     }
 
@@ -48,15 +49,27 @@ class FavoriteButtonHandler extends BaseComponent {
         });
     }
 
-    handleLogoutMessage(data) {
+    handleLogoutMessage() {
         const allComponents = document.querySelectorAll(this.selectors.component);
-        allComponents.forEach(comp => {
-            AuthenticationHandler.resetAuthenticationState(comp, (component) => {
-                component.dataset.inFavorites = 'false';
-                component.classList.remove(this.cssClasses.favorited);
-                this.updateUI(component, false, component.querySelector(this.selectors.count)?.textContent || 0);
-            });
+        allComponents.forEach(component => {
+            AuthenticationHandler.resetAuthenticationState(
+                component,
+                (comp) => this.resetComponentOnLogout(comp)
+            );
         });
+    }
+
+    resetComponentOnLogout(component) {
+        component.classList.remove(this.cssClasses.favorited);
+
+        component.dataset.inFavorites = 'false';
+
+        const container = component.querySelector(this.selectors.container);
+        const button = component.querySelector(this.selectors.button);
+        const title = 'Login to add to favorites';
+
+        if (container) container.setAttribute('title', title);
+        if (button) button.setAttribute('title', title);
     }
 
     findComponentsForUpdate(productId) {
@@ -98,7 +111,10 @@ class FavoriteButtonHandler extends BaseComponent {
 
     async onFavoriteClick(component) {
         if (!this.isAuthenticated(component)) {
-            MessageManager.showMessage('Login required', 'info', component.querySelector(this.selectors.messages));
+            MessageManager.showMessage(
+                'Login required', 'info',
+                component.querySelector(this.selectors.messages)
+            );
             return;
         }
 
@@ -114,7 +130,7 @@ class FavoriteButtonHandler extends BaseComponent {
         try {
             this.setLoadingState(component, true);
 
-            const result = await this.httpClient.handleResponse(
+            await this.httpClient.handleResponse(
                 await this.httpClient.sendRequest(url),
                 component,
                 {
@@ -129,7 +145,11 @@ class FavoriteButtonHandler extends BaseComponent {
             if (AuthenticationHandler.isAuthenticationError(error)) {
                 this.handleLogoutDetection(component);
             } else {
-                MessageManager.showMessage('Failed to update favorites. Please try again.', 'error', component.querySelector(this.selectors.messages));
+                MessageManager.showMessage(
+                    'Failed to update favorites. Please try again.',
+                    'error',
+                    component.querySelector(this.selectors.messages)
+                );
             }
         } finally {
             this.setLoadingState(component, false);
@@ -151,7 +171,11 @@ class FavoriteButtonHandler extends BaseComponent {
     }
 
     handleErrorResponse(error, component) {
-        MessageManager.showMessage('Failed to update favorites. Please try again.', 'error', component.querySelector(this.selectors.messages));
+        MessageManager.showMessage(
+            'Failed to update favorites. Please try again.',
+            'error',
+            component.querySelector(this.selectors.messages)
+        );
     }
 
     updateFavoriteState(component, inFavorites, count = null) {
@@ -161,11 +185,6 @@ class FavoriteButtonHandler extends BaseComponent {
     }
 
     updateUI(component, inFavorites, count = null) {
-        const icon = component.querySelector(this.selectors.icon);
-        if (icon) {
-            icon.className = `${inFavorites ? 'fas' : 'far'} fa-heart favorite-icon`;
-        }
-
         if (count !== null) {
             const countEl = component.querySelector(this.selectors.count);
             if (countEl) {
@@ -174,10 +193,17 @@ class FavoriteButtonHandler extends BaseComponent {
         }
 
         const button = component.querySelector(this.selectors.button);
-        if (button) {
-            const title = inFavorites ? 'Remove from favorites' : 'Add to favorites';
-            button.setAttribute('title', title);
+        const container = component.querySelector(this.selectors.container);
+
+        let title;
+        if (!this.isAuthenticated(component)) {
+            title = 'Login to add to favorites';
+        } else {
+            title = inFavorites ? 'Remove from favorites' : 'Add to favorites';
         }
+
+        if (button) button.setAttribute('title', title);
+        if (container) container.setAttribute('title', title);
     }
 
     setLoadingState(component, isLoading) {
@@ -188,9 +214,9 @@ class FavoriteButtonHandler extends BaseComponent {
     }
 
     handleLogoutDetection() {
+        this.handleLogoutMessage();
         AuthenticationHandler.handleGlobalLogout(this.authBroadcastManager);
     }
-
 }
 
 document.addEventListener('DOMContentLoaded', () => {
