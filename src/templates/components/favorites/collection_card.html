@@ -109,7 +109,7 @@
         <small class="text-muted">
           Updated: {{ collection.updated_at|date:"M d, Y" }}
         </small>
-        <a href="{{ collection.absolute_url }}" class="btn btn-view-all">
+        <a href="{{ collection.get_absolute_url }}" class="btn btn-view-all">
           View All
         </a>
       </div>

@@ -1,0 +1,207 @@
+{% extends 'layout/base.html' %}
+{% load static %}
+{% load product_price %}
+
+{% block title %}{{ collection.name }} — {{ collection.user.username }}'s Collection{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/pages/collection-detail.css' %}">
+  <link rel="stylesheet" href="{% static 'css/components/product-price.css' %}">
+{% endblock %}
+
+{% block extra_js %}
+  <script type="module" src="{% static 'js/components/collection-reorder.js' %}" defer></script>
+{% endblock %}
+
+{% block content %}
+  <div class="py-4">
+    <!-- Collection Header -->
+    <div class="collection-hero p-4 p-lg-5 mb-4">
+      <div class="d-lg-flex align-items-center justify-content-between">
+        <div class="text-start">
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <div class="collection-avatar">
+              <i class="fas fa-heart"></i>
+            </div>
+            <div>
+              <h1 class="h2 fw-bold mb-1">{{ collection.name }}</h1>
+              <p class="text-muted mb-0">
+                By <strong>{{ collection.user.username }}</strong>
+                {% if not collection.is_public %}
+                  <span class="badge badge-soft ms-2"><i class="fas fa-lock me-1"></i>Private</span>{% endif %}
+              </p>
+            </div>
+          </div>
+
+          {% if collection.description %}
+            <p class="text-muted mb-0">{{ collection.description }}</p>
+          {% endif %}
+        </div>
+
+        <div class="text-lg-end mt-3 mt-lg-0">
+          <div class="collection-stats">
+            <div class="stat-item">
+              <span class="stat-number">{{ items_count }}</span>
+              <span class="stat-label">Items</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Products Grid -->
+    {% if favorite_items %}
+      <div class="row g-4"
+           id="collection-items-grid"
+           data-collection-id="{{ collection.id }}"
+           data-can-reorder="{% if request.user == collection.user %}true{% else %}false{% endif %}">
+        {% for favorite_item in favorite_items %}
+          {% with product=favorite_item.product %}
+            {% with stock=product.get_stock_status %}
+              <div class="col-12 col-sm-6 col-lg-4 col-xl-3 draggable-item"
+                   data-item-id="{{ favorite_item.id }}"
+                   data-position="{{ favorite_item.position }}">
+                <div class="favorite-card {% if not stock.is_active or not stock.in_stock %}unavailable{% endif %}">
+
+                  <!-- Drag Handle -->
+                  {% if request.user == collection.user %}
+                    <div class="drag-handle" title="Drag to reorder">
+                      <i class="fas fa-grip-vertical"></i>
+                    </div>
+                  {% endif %}
+
+                  <!-- Card Inner Content -->
+                  <div class="favorite-card-inner">
+
+                    <!-- Image Section -->
+                    <div class="favorite-image-container">
+                      {% if product.image_url %}
+                        {% if stock.is_active and stock.in_stock %}
+                          <a href="{{ product.get_absolute_url }}" class="favorite-image-link">
+                            <img src="{{ product.image_url }}" alt="{{ product.product_display_name }}" class="favorite-image">
+                            <div class="image-overlay">
+                              <div class="overlay-content">
+                                <i class="fas fa-eye"></i>
+                                <span>View Details</span>
+                              </div>
+                            </div>
+                          </a>
+                        {% else %}
+                          <div class="favorite-image-link disabled">
+                            <img src="{{ product.image_url }}" alt="{{ product.product_display_name }}" class="favorite-image">
+                            <div class="image-overlay disabled">
+                              <div class="overlay-content">
+                                <i class="fas fa-ban"></i>
+                                <span>Unavailable</span>
+                              </div>
+                            </div>
+                          </div>
+                        {% endif %}
+                      {% else %}
+                        <div class="favorite-image-link {% if not stock.is_active or not stock.in_stock %}disabled{% endif %}">
+                          <div class="no-image-placeholder">
+                            <i class="fas fa-image"></i>
+                            <span>No image</span>
+                          </div>
+                          <div class="image-overlay {% if not stock.is_active or not stock.in_stock %}disabled{% endif %}">
+                            <div class="overlay-content">
+                              {% if stock.is_active and stock.in_stock %}
+                                <i class="fas fa-eye"></i>
+                                <span>View Details</span>
+                              {% else %}
+                                <i class="fas fa-ban"></i>
+                                <span>Unavailable</span>
+                              {% endif %}
+                            </div>
+                          </div>
+                        </div>
+                      {% endif %}
+
+                      <!-- Status Badge -->
+                      {% if not stock.is_active or not stock.in_stock %}
+                        <div class="status-badge unavailable">
+                          {% if not stock.is_active %}
+                            <i class="fas fa-ban"></i>
+                            <span>Unavailable</span>
+                          {% else %}
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <span>Out of Stock</span>
+                          {% endif %}
+                        </div>
+                      {% else %}
+                        <div class="status-badge available">
+                          <i class="fas fa-check-circle"></i>
+                          <span>Available</span>
+                        </div>
+                      {% endif %}
+                    </div>
+
+                    <!-- Content Section -->
+                    <div class="favorite-content">
+                      <!-- Title -->
+                      <div class="favorite-title-section">
+                        <h3 class="favorite-title">
+                          {% if stock.is_active and stock.in_stock %}
+                            <a href="{{ product.get_absolute_url }}">{{ product.product_display_name }}</a>
+                          {% else %}
+                            <span class="disabled-title">{{ product.product_display_name }}</span>
+                          {% endif %}
+                        </h3>
+                      </div>
+
+                      <!-- Price Section -->
+                      <div class="favorite-price-section">
+                        {% if stock.is_active and stock.in_stock %}
+                          <div class="price-wrapper">
+                            {% product_price product %}
+                          </div>
+                        {% else %}
+                          <div class="price-unavailable">
+                            <i class="fas fa-minus-circle"></i>
+                            <span>Price unavailable</span>
+                          </div>
+                        {% endif %}
+                      </div>
+
+                      <!-- Note Section -->
+                      {% if favorite_item.note %}
+                        <div class="favorite-note">
+                          <div class="note-icon">
+                            <i class="fas fa-sticky-note"></i>
+                          </div>
+                          <div class="note-content">
+                            <span class="note-label">Note:</span>
+                            <p class="note-text">{{ favorite_item.note }}</p>
+                          </div>
+                        </div>
+                      {% endif %}
+                    </div>
+
+                    <!-- Decorative Elements -->
+                    <div class="card-decoration">
+                      <div class="decoration-dot dot-1"></div>
+                      <div class="decoration-dot dot-2"></div>
+                      <div class="decoration-dot dot-3"></div>
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+            {% endwith %}
+          {% endwith %}
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="text-center text-muted py-5">
+        <div class="empty-state">
+          <div class="empty-icon">
+            <i class="fas fa-heart-broken"></i>
+          </div>
+          <h3>This collection is empty</h3>
+          <p>Add some products to see them here</p>
+        </div>
+      </div>
+    {% endif %}
+
+  </div>
+{% endblock %}

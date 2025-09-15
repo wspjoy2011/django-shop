@@ -100,7 +100,7 @@ class FavoriteCollectionCreateAPIView(BaseAPIView):
             'updated_at': collection.updated_at.isoformat(),
             'formatted_updated_at': collection.updated_at.strftime('%b %d, %Y'),
             'slider_items': [],
-            'absolute_url': ''
+            'absolute_url': collection.get_absolute_url()
         }
 
         response_data = {

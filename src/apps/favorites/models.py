@@ -69,7 +69,7 @@ class FavoriteCollection(models.Model):
     def get_absolute_url(self):
         return reverse('favorites:collection_detail', kwargs={
             'username': self.user.username,
-            'slug': self.slug
+            'collection_slug': self.slug
         })
 
     def save(self, *args, **kwargs):
