@@ -37,6 +37,11 @@ urlpatterns = [
         views.FavoriteCollectionClearView.as_view(),
         name='favorite_collection_clear'),
     path(
+        'favorites/collections/<int:collection_id>/reorder/',
+        views.FavoriteCollectionReorderAPIView.as_view(),
+        name='favorite_collection_reorder'
+    ),
+    path(
         'favorites/collections/<int:collection_id>/set-default/',
         views.FavoriteCollectionSetDefaultAPIView.as_view(),
         name='favorite_collection_set_default'),

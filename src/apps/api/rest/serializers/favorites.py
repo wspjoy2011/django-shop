@@ -50,3 +50,54 @@ class FavoriteCollectionSetDefaultResponseSerializer(serializers.Serializer):
 class UserFavoritesCountResponseSerializer(serializers.Serializer):
     success = serializers.BooleanField(default=True)
     count = serializers.IntegerField()
+
+
+class FavoriteItemPositionSerializer(serializers.Serializer):
+    item_id = serializers.IntegerField()
+    position = serializers.IntegerField(min_value=1)
+
+    def validate_item_id(self, value):
+        if value <= 0:
+            raise serializers.ValidationError('Item ID must be a positive integer')
+        return value
+
+
+class FavoriteCollectionReorderRequestSerializer(serializers.Serializer):
+    items = FavoriteItemPositionSerializer(many=True)
+
+    def validate_items(self, value):
+        if not value:
+            raise serializers.ValidationError('At least one item is required')
+
+        if len(value) > 100:
+            raise serializers.ValidationError('Too many items. Maximum 100 items per request')
+
+        item_ids = []
+        positions = []
+        for item in value:
+            item_ids.append(item['item_id'])
+            positions.append(item['position'])
+
+        if len(item_ids) != len(set(item_ids)):
+            raise serializers.ValidationError('Duplicate item IDs are not allowed')
+
+        if len(positions) != len(set(positions)):
+            raise serializers.ValidationError('Duplicate positions are not allowed')
+
+        positions.sort()
+        expected_positions = list(range(1, len(positions) + 1))
+        if positions != expected_positions:
+            raise serializers.ValidationError(
+                f'Positions must be sequential starting from 1. '
+                f'Expected: {expected_positions}, got: {positions}'
+            )
+
+        return value
+
+    def validate(self, attrs):
+        items = attrs.get('items', [])
+
+        if not items:
+            raise serializers.ValidationError('Items list cannot be empty')
+
+        return attrs

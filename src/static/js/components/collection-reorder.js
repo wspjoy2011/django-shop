@@ -1,5 +1,7 @@
 import {BaseComponent} from '../utils/components/BaseComponent.js';
 import {MessageManager} from '../utils/components/MessageManager.js';
+import {AuthenticatedHttpClient} from '../utils/http/AuthenticatedHttpClient.js';
+import {AuthenticationHandler} from '../utils/components/AuthenticationHandler.js';
 
 class CollectionReorderHandler extends BaseComponent {
     constructor() {
@@ -19,6 +21,8 @@ class CollectionReorderHandler extends BaseComponent {
             canReorder: 'can-reorder'
         };
 
+        this.reorderUrl = '/api/v1/favorites/collections/{id}/reorder/';
+
         this.dragState = {
             draggedItem: null,
             draggedIndex: -1,
@@ -26,6 +30,7 @@ class CollectionReorderHandler extends BaseComponent {
             items: []
         };
 
+        this.httpClient = new AuthenticatedHttpClient();
         this.init();
     }
 
@@ -40,9 +45,8 @@ class CollectionReorderHandler extends BaseComponent {
         grid.classList.add(this.cssClasses.canReorder);
 
         document.addEventListener('mousedown', (e) => {
-            const handle = e.target.closest(this.selectors.dragHandle);
-            if (handle) {
-                const item = handle.closest(this.selectors.item);
+            if (e.target.closest(this.selectors.dragHandle)) {
+                const item = e.target.closest(this.selectors.item);
                 if (item) {
                     e.preventDefault();
                     this.startDrag(item, e);
@@ -51,9 +55,8 @@ class CollectionReorderHandler extends BaseComponent {
         });
 
         document.addEventListener('touchstart', (e) => {
-            const handle = e.target.closest(this.selectors.dragHandle);
-            if (handle) {
-                const item = handle.closest(this.selectors.item);
+            if (e.target.closest(this.selectors.dragHandle)) {
+                const item = e.target.closest(this.selectors.item);
                 if (item) {
                     e.preventDefault();
                     this.startDrag(item, e.touches[0]);
@@ -116,8 +119,6 @@ class CollectionReorderHandler extends BaseComponent {
         if (!this.dragState.draggedItem) return;
 
         const draggedItem = this.dragState.draggedItem;
-        const grid = document.querySelector(this.selectors.grid);
-
         draggedItem.classList.remove(this.cssClasses.dragging);
         draggedItem.style.position = '';
         draggedItem.style.left = '';
@@ -131,15 +132,15 @@ class CollectionReorderHandler extends BaseComponent {
         const newIndex = this.getPlaceholderIndex();
         const oldIndex = this.dragState.draggedIndex;
 
-        if (this.dragState.placeholder && newIndex !== oldIndex) {
+        if (this.dragState.placeholder && newIndex !== -1 && newIndex !== oldIndex) {
             this.dragState.placeholder.parentNode.insertBefore(draggedItem, this.dragState.placeholder);
-
-            this.saveNewOrder();
+            void this.saveNewOrder();
+        } else {
+             this.dragState.draggedItem.parentNode.insertBefore(draggedItem, this.dragState.items[oldIndex].nextSibling);
         }
 
         this.cleanupDrag();
         this.hideDragFeedback();
-
         this.resetDragState();
     }
 
@@ -150,12 +151,9 @@ class CollectionReorderHandler extends BaseComponent {
         this.dragState.placeholder.className = `col-12 col-sm-6 col-lg-4 col-xl-3 ${this.cssClasses.placeholder}`;
         this.dragState.placeholder.innerHTML = `
             <div class="placeholder-content">
-                <div class="placeholder-icon">
-                    <i class="fas fa-plus"></i>
-                </div>
+                <div class="placeholder-icon"><i class="fas fa-plus"></i></div>
                 <span>Drop here</span>
-            </div>
-        `;
+            </div>`;
 
         this.dragState.draggedItem.parentNode.insertBefore(
             this.dragState.placeholder,
@@ -179,31 +177,61 @@ class CollectionReorderHandler extends BaseComponent {
     getPlaceholderIndex() {
         const grid = document.querySelector(this.selectors.grid);
         if (!grid || !this.dragState.placeholder) return -1;
-
-        const allChildren = Array.from(grid.children);
-        return allChildren.indexOf(this.dragState.placeholder);
+        return Array.from(grid.children).indexOf(this.dragState.placeholder);
     }
 
-    saveNewOrder() {
+    async saveNewOrder() {
         const grid = document.querySelector(this.selectors.grid);
         if (!grid) return;
 
+        const collectionId = grid.dataset.collectionId;
+        const url = this.reorderUrl.replace('{id}', collectionId);
         const items = Array.from(grid.querySelectorAll(this.selectors.item));
-        const newOrder = items.map((item, index) => ({
-            id: item.dataset.itemId,
-            position: index + 1
-        }));
 
-        console.log('New order:', newOrder);
+        const payload = {
+            items: items.map((item, index) => ({
+                item_id: parseInt(item.dataset.itemId),
+                position: index + 1
+            }))
+        };
 
-        MessageManager.showGlobalMessage(
-            'Items reordered successfully!',
-            'success',
-            {timeout: 2000}
-        );
+        try {
+            const response = await this.httpClient.sendJSON(url, payload);
+            await this.httpClient.handleResponse(response, grid, {
+                onSuccess: (data) => this.handleReorderSuccess(data, items),
+                onError: (error) => this.handleReorderError(error),
+                onLoginRedirect: () => this.handleLogoutDetection(),
+            });
+        } catch (error) {
+            this.handleReorderError(error);
+        }
+    }
 
+    handleReorderSuccess(data, items) {
         items.forEach((item, index) => {
             item.dataset.position = index + 1;
+        });
+
+        MessageManager.showGlobalMessage(
+            data.message || 'Items reordered successfully!',
+            'success',
+            {timeout: 3000}
+        );
+    }
+
+    handleReorderError(error) {
+        MessageManager.showGlobalMessage(
+            'Failed to reorder items. Page will refresh to restore order.',
+            'error',
+            {timeout: 5000}
+        );
+        setTimeout(() => window.location.reload(), 5000);
+    }
+
+    handleLogoutDetection() {
+        AuthenticationHandler.handleGlobalLogout(this.authBroadcastManager, {
+            redirectUrl: window.location.href,
+            message: 'Session expired. Please log in to reorder items.'
         });
     }
 
@@ -211,7 +239,6 @@ class CollectionReorderHandler extends BaseComponent {
         if (this.dragState.placeholder) {
             this.dragState.placeholder.remove();
         }
-
         document.querySelectorAll(`.${this.cssClasses.dragOver}`).forEach(el => {
             el.classList.remove(this.cssClasses.dragOver);
         });
@@ -222,11 +249,10 @@ class CollectionReorderHandler extends BaseComponent {
         if (grid) {
             grid.classList.add('reordering');
         }
-
         MessageManager.showGlobalMessage(
-            'Drag the item to a new position and release to reorder',
+            'Drag item to a new position and release',
             'info',
-            {timeout: 2000}
+            {timeout: 3000}
         );
     }
 

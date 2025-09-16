@@ -8,13 +8,15 @@ from apps.catalog.models import Product
 from apps.favorites.models import FavoriteCollection, FavoriteItem
 
 from .base import BaseAPIView
+from ..mixins import FavoriteCollectionPermissionMixin
+from ..permissions import IsCollectionOwnerPermission
 from ..serializers import (
     FavoriteToggleResponseSerializer,
     FavoriteCollectionCreateRequestSerializer,
     FavoriteCollectionCreateResponseSerializer,
     FavoriteCollectionSetDefaultResponseSerializer,
     MessageResponseSerializer,
-    UserFavoritesCountResponseSerializer
+    UserFavoritesCountResponseSerializer, FavoriteCollectionReorderRequestSerializer
 )
 from ..choices import FavoriteActionChoices
 
@@ -174,11 +176,13 @@ class FavoriteCollectionDeleteView(BaseAPIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class FavoriteCollectionClearView(BaseAPIView):
+class FavoriteCollectionClearView(FavoriteCollectionPermissionMixin, BaseAPIView):
 
     def delete(self, request, *args, **kwargs):
         collection_id = kwargs.get('collection_id')
-        collection = get_object_or_404(FavoriteCollection, pk=collection_id, user=request.user)
+        collection = get_object_or_404(FavoriteCollection, pk=collection_id)
+
+        self.check_owner_permission(request, collection)
 
         items_deleted_count, _ = collection.favorite_items.all().delete()
 
@@ -199,3 +203,72 @@ class UserFavoritesCountView(BaseAPIView):
             serializer_class=UserFavoritesCountResponseSerializer,
             status_code=status.HTTP_200_OK
         )
+
+
+class FavoriteCollectionReorderAPIView(FavoriteCollectionPermissionMixin, BaseAPIView):
+
+    def post(self, request, collection_id):
+        collection = get_object_or_404(FavoriteCollection, id=collection_id)
+
+        self.check_owner_permission(request, collection)
+
+        request_serializer = FavoriteCollectionReorderRequestSerializer(data=request.data)
+        if not request_serializer.is_valid():
+            return self.return_validation_error(request_serializer.errors)
+
+        items_data = request_serializer.validated_data['items']
+
+        requested_item_ids, position_map = self._extract_items_data(items_data)
+
+        existing_items, missing_ids = self._validate_items_exist(collection, requested_item_ids)
+        if missing_ids:
+            return self.return_validation_error({
+                'items': [f'Items with IDs {list(missing_ids)} do not exist in this collection']
+            })
+
+        self._update_items_positions(existing_items, position_map)
+
+        self._save_reorder_changes(collection, existing_items)
+
+        response_data = {
+            'success': True,
+            'message': 'Items reordered successfully',
+        }
+
+        return self.return_success_response(
+            response_data,
+            MessageResponseSerializer,
+            status.HTTP_200_OK
+        )
+
+
+    def _extract_items_data(self, items_data):
+        requested_item_ids = []
+        position_map = {}
+        for item in items_data:
+            item_id = item['item_id']
+            requested_item_ids.append(item_id)
+            position_map[item_id] = item['position']
+        return requested_item_ids, position_map
+
+    def _validate_items_exist(self, collection, requested_item_ids):
+        existing_items = FavoriteItem.objects.filter(
+            collection=collection,
+            id__in=requested_item_ids
+        )
+
+        existing_item_ids = set(existing_items.values_list('id', flat=True))
+        if len(existing_item_ids) != len(requested_item_ids):
+            missing_ids = set(requested_item_ids) - existing_item_ids
+            return None, missing_ids
+
+        return existing_items, None
+
+    def _update_items_positions(self, existing_items, position_map):
+        for item in existing_items:
+            item.position = position_map[item.id]
+
+    def _save_reorder_changes(self, collection, existing_items):
+        with transaction.atomic():
+            FavoriteItem.objects.bulk_update(existing_items, ['position'])
+            collection.save(update_fields=['updated_at'])
