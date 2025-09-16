@@ -6,7 +6,7 @@
           {{ collection.name }}
           {% if collection.is_default %}
             <span class="badge bg-primary ms-2">Default</span>
-            {% if collection.items_count %}
+            {% if collection.total_items_count %}
               <span class="collection-actions">
                 <button type="button"
                         class="btn btn-link p-0 ms-2 clear-collection-btn"
@@ -24,7 +24,7 @@
                       title="Set as default collection">
                 <i class="fas fa-star text-muted"></i>
               </button>
-              {% if collection.items_count %}
+              {% if collection.total_items_count %}
                 <button type="button"
                         class="btn btn-link p-0 ms-2 clear-collection-btn"
                         data-collection-id="{{ collection.id }}"

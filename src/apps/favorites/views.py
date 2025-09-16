@@ -2,7 +2,6 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Prefetch, Count
-from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect
 from django.views.generic import ListView, DetailView
 
@@ -20,12 +19,26 @@ class FavoriteCollectionListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         slider_items_qs = (
             FavoriteItem.objects
+            .filter(product__image_url__isnull=False)
             .select_related(
                 'product',
-                'product__inventory',
-                'product__inventory__currency',
+                'product__inventory__currency'
             )
-            .filter(product__image_url__isnull=False)
+            .only(
+                'id',
+                'collection_id',
+                'position',
+
+                'product__image_url',
+                'product__product_display_name',
+
+                'product__inventory__base_price',
+                'product__inventory__sale_price',
+
+                'product__inventory__currency__symbol',
+                'product__inventory__currency__code',
+                'product__inventory__currency__decimals',
+            )
             .order_by('position')
         )
 
@@ -33,6 +46,15 @@ class FavoriteCollectionListView(LoginRequiredMixin, ListView):
             FavoriteCollection.objects
             .filter(user=self.request.user)
             .select_related('user')
+            .only(
+                'id',
+                'name',
+                'slug',
+                'is_default',
+                'updated_at',
+
+                'user__username'
+            )
             .annotate(total_items_count=Count('favorite_items'))
             .prefetch_related(
                 Prefetch(
@@ -59,14 +81,8 @@ class FavoriteCollectionDetailView(DetailView):
     context_object_name = 'collection'
 
     def dispatch(self, request, *args, **kwargs):
-        try:
-            collection = self.get_object()
-        except Http404:
-            messages.warning(
-                request,
-                "Collection not found."
-            )
-            return redirect('catalog:home')
+        response = super().dispatch(request, *args, **kwargs)
+        collection = self.object
 
         if not collection.is_public:
             if not request.user.is_authenticated:
@@ -75,40 +91,65 @@ class FavoriteCollectionDetailView(DetailView):
                     "This collection is private. Please log in to view it."
                 )
                 return redirect('catalog:home')
-
-            if collection.user != request.user:
+            if request.user != collection.user:
                 messages.warning(
                     request,
                     "You don't have access to this collection."
                 )
                 return redirect('catalog:home')
 
-        return super().dispatch(request, *args, **kwargs)
+        return response
 
     def get_object(self, queryset=None):
-        username = self.kwargs['username']
-        collection_slug = self.kwargs['collection_slug']
-
-        user = get_object_or_404(User, username=username)
+        queryset = FavoriteCollection.objects.select_related('user').only(
+            'id', 'name', 'description', 'is_public', 'slug', 'user__username'
+        )
 
         return get_object_or_404(
-            FavoriteCollection.objects.select_related('user'),
-            user=user,
-            slug=collection_slug
+            queryset,
+            user__username=self.kwargs['username'],
+            slug=self.kwargs['collection_slug']
+        )
+
+    def get_items_queryset(self, collection):
+        return (
+            FavoriteItem.objects
+            .filter(collection=collection)
+            .select_related(
+                'product',
+                'product__inventory',
+                'product__inventory__currency'
+            )
+            .only(
+                'id',
+                'position',
+                'note',
+
+                'product__product_display_name',
+                'product__image_url',
+                'product__slug',
+
+                'product__inventory__is_active',
+                'product__inventory__stock_quantity',
+                'product__inventory__reserved_quantity',
+                'product__inventory__base_price',
+                'product__inventory__sale_price',
+                'product__inventory__currency__symbol',
+                'product__inventory__currency__code',
+                'product__inventory__currency__decimals'
+            )
+            .order_by('position')
         )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        collection = self.get_object()
+        collection = self.object
 
-        favorite_items = (
-            FavoriteItem.objects
-            .filter(collection=collection)
-            .select_related('product')
-            .order_by('position')
-        )
+        favorite_items_qs = self.get_items_queryset(collection)
 
-        context['favorite_items'] = favorite_items
-        context['items_count'] = favorite_items.count()
+        favorite_items_list = list(favorite_items_qs)
+
+        context['favorite_items'] = favorite_items_list
+        context['items_count'] = len(favorite_items_list)
 
         return context
