@@ -8,6 +8,10 @@
   <link rel="stylesheet" href="{% static 'css/pages/category_create.css' %}">
 {% endblock %}
 
+{% block extra_js %}
+  <script src="{% static 'js/pages/category_create.js' %}" defer></script>
+{% endblock %}
+
 {% block content %}
   <div class="container my-5">
     <div class="row justify-content-center">
@@ -17,6 +21,8 @@
             <h2 class="card-title">
               <i class="fas fa-plus-circle"></i>
               Create {{ category_type_display }}
+              <small id="parent-category-display" class="text-light d-block" style="display: none;">for "<span
+                      id="parent-category-name"></span>"</small>
             </h2>
           </div>
           <div class="card-body">

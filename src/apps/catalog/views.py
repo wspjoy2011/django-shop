@@ -312,7 +312,7 @@ class ProductUpdateView(ProductAccessMixin, LoginRequiredMixin, UpdateView):
         return self.object.get_absolute_url()
 
 
-class ProductDeleteView(ProductAccessMixin, LoginRequiredMixin, DeleteView):
+class ProductDeleteView(ProductAccessMixin, DeleteView):
     model = Product
     template_name = "pages/catalog/product/delete.html"
     context_object_name = "product"
@@ -357,10 +357,12 @@ class CategoryCreateView(CategoryAccessMixin, CreateView):
         kwargs = super().get_form_kwargs()
         category_type = self.kwargs.get('category_type')
 
-        if category_type == 'sub' and 'master_id' in self.request.GET:
-            kwargs['master_category_id'] = self.request.GET.get('master_id')
-        elif category_type == 'article' and 'sub_id' in self.request.GET:
-            kwargs['sub_category_id'] = self.request.GET.get('sub_id')
+        if category_type == 'sub' and 'master_category_id' in self.request.GET:
+            master_id = self.request.GET.get('master_category_id')
+            kwargs['master_category_id'] = int(master_id) if master_id.isdigit() else None
+        elif category_type == 'article' and 'sub_category_id' in self.request.GET:
+            sub_id = self.request.GET.get('sub_category_id')
+            kwargs['sub_category_id'] = int(sub_id) if sub_id.isdigit() else None
 
         return kwargs
 

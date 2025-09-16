@@ -25,7 +25,7 @@ class ProductAccessMixin(View):
         return super().dispatch(request, *args, **kwargs)
 
 
-class CategoryAccessMixin:
+class CategoryAccessMixin(ProductAccessMixin):
     error_message = "You do not have permission to add/edit/delete categories."
 
 

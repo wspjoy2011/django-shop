@@ -1,6 +1,6 @@
 {% load nav_active %}
 
-{% if nav_categories %}
+{% if nav_categories or request.user.is_staff %}
   <li class="nav-item dropdown categories-dropdown">
     <a class="nav-link dropdown-toggle {{ request|is_active:'catalog:product_list_by_master,catalog:product_list_by_sub,catalog:product_list_by_article'|default:'text-light' }}"
        href="#" id="categoriesDropdown"
@@ -8,30 +8,71 @@
       Categories
     </a>
     <ul class="dropdown-menu categories-menu" aria-labelledby="categoriesDropdown">
+      {% if request.user.is_staff %}
+        <li>
+          <a class="dropdown-item" href="{% url 'catalog:category_create' 'master' %}">
+            <i class="fas fa-plus-circle text-primary me-2"></i>Add Master Category
+          </a>
+        </li>
+        {% if nav_categories %}
+          <li>
+            <hr class="dropdown-divider">
+          </li>
+        {% endif %}
+      {% endif %}
+
       {% for master_category in nav_categories %}
         <li class="dropdown-submenu">
           <a class="dropdown-item dropdown-toggle d-flex justify-content-between align-items-center"
              href="{{ master_category.get_absolute_url }}">
             <span>{{ master_category.name }}</span>
-            {% if master_category.sub_categories.all %}
+            {% if master_category.sub_categories.all or request.user.is_staff %}
               <i class="fas fa-chevron-right chevron-icon"></i>
             {% endif %}
           </a>
 
-          {% if master_category.sub_categories.all %}
+          {% if master_category.sub_categories.all or request.user.is_staff %}
             <ul class="dropdown-menu submenu">
+              {% if request.user.is_staff %}
+                <li>
+                  <a class="dropdown-item"
+                     href="{% url 'catalog:category_create' 'sub' %}?master_category_id={{ master_category.id }}">
+                    <i class="fas fa-plus-circle text-info me-2"></i>Add Subcategory
+                  </a>
+                </li>
+                {% if master_category.sub_categories.all %}
+                  <li>
+                    <hr class="dropdown-divider">
+                  </li>
+                {% endif %}
+              {% endif %}
+
               {% for sub_category in master_category.sub_categories.all %}
                 <li class="dropdown-submenu">
                   <a class="dropdown-item dropdown-toggle d-flex justify-content-between align-items-center"
                      href="{{ sub_category.get_absolute_url }}">
                     <span>{{ sub_category.name }}</span>
-                    {% if sub_category.article_types.all %}
+                    {% if sub_category.article_types.all or request.user.is_staff %}
                       <i class="fas fa-chevron-right chevron-icon"></i>
                     {% endif %}
                   </a>
 
-                  {% if sub_category.article_types.all %}
+                  {% if sub_category.article_types.all or request.user.is_staff %}
                     <ul class="dropdown-menu submenu submenu-level-2">
+                      {% if request.user.is_staff %}
+                        <li>
+                          <a class="dropdown-item"
+                             href="{% url 'catalog:category_create' 'article' %}?sub_category_id={{ sub_category.id }}">
+                            <i class="fas fa-plus-circle text-success me-2"></i>Add Article Type
+                          </a>
+                        </li>
+                        {% if sub_category.article_types.all %}
+                          <li>
+                            <hr class="dropdown-divider">
+                          </li>
+                        {% endif %}
+                      {% endif %}
+
                       {% for article_type in sub_category.article_types.all %}
                         <li>
                           <a class="dropdown-item" href="{{ article_type.get_absolute_url }}">
