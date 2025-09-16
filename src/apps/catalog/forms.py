@@ -3,7 +3,8 @@ import json
 from django import forms
 from django.db.models import Max
 
-from .models import Product, ArticleType
+from .mixins import CategoryFormMixin
+from .models import Product, ArticleType, SubCategory, MasterCategory
 
 
 class ProductForm(forms.ModelForm):
@@ -61,48 +62,100 @@ class ProductForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._set_initial_product_id()
+        self._set_field_styles()
+        self._set_category_fields()
 
-        if not self.instance.pk:
-            is_bound_with_value = bool(getattr(self, "data", None)) and self.data.get("product_id")
-            has_initial_value = bool(self.initial.get("product_id"))
-            if not is_bound_with_value and not has_initial_value:
-                max_pid = Product.objects.aggregate(mx=Max("product_id"))["mx"] or 0
-                self.fields["product_id"].initial = max_pid + 1
-                self.fields["product_id"].widget.attrs.setdefault("min", max(1, max_pid + 1))
+    def _set_initial_product_id(self):
+        is_new_product = not self.instance.pk
+        is_form_unbound = not hasattr(self, "data") or self.data.get("product_id") is None
 
+        if is_new_product and is_form_unbound and not self.initial.get("product_id"):
+            max_pid = Product.objects.aggregate(mx=Max("product_id"))["mx"] or 0
+            self.fields["product_id"].initial = max_pid + 1
+            self.fields["product_id"].widget.attrs["min"] = max(1, max_pid + 1)
+
+    def _set_field_styles(self):
         for name, field in self.fields.items():
-            if name in {"master_category_display", "sub_category_display"}:
-                field.widget.attrs.setdefault("class", "form-control")
-                continue
-            if isinstance(field.widget, forms.Select):
-                field.widget.attrs.setdefault("class", "form-select")
-            else:
-                field.widget.attrs.setdefault("class", "form-control")
+            css_class = "form-select" if isinstance(field.widget, forms.Select) else "form-control"
+            field.widget.attrs.setdefault("class", css_class)
 
-        article_map = {}
-        for at in ArticleType.objects.select_related("sub_category__master_category").all():
-            article_map[str(at.pk)] = {
-                "sub": at.sub_category.name,
-                "master": at.sub_category.master_category.name,
+    def _set_category_fields(self):
+        article_types = ArticleType.objects.select_related("sub_category__master_category").all()
+        article_map = {
+            str(article_type.pk): {
+                "sub": article_type.sub_category.name,
+                "master": article_type.sub_category.master_category.name,
             }
-
+            for article_type in article_types
+        }
         self.fields["article_type"].widget.attrs["data-article-map"] = json.dumps(article_map)
 
-        at_obj = None
-        if "article_type" in self.data and self.data.get("article_type"):
-            try:
-                at_obj = ArticleType.objects.select_related("sub_category__master_category").get(
-                    pk=self.data.get("article_type")
-                )
-            except ArticleType.DoesNotExist:
-                at_obj = None
-        elif self.instance and self.instance.pk:
-            at_obj = (
-                ArticleType.objects.select_related("sub_category__master_category")
-                .filter(pk=self.instance.article_type_id)
-                .first()
-            )
+        article_type_id = None
+        if self.is_bound and self.data.get("article_type"):
+            article_type_id = self.data["article_type"]
+        elif self.instance.pk:
+            article_type_id = self.instance.article_type_id
 
-        if at_obj:
-            self.fields["sub_category_display"].initial = at_obj.sub_category.name
-            self.fields["master_category_display"].initial = at_obj.sub_category.master_category.name
+        if article_type_id and str(article_type_id) in article_map:
+            categories = article_map[str(article_type_id)]
+            self.fields["sub_category_display"].initial = categories["sub"]
+            self.fields["master_category_display"].initial = categories["master"]
+
+
+class MasterCategoryForm(CategoryFormMixin, forms.ModelForm):
+    class Meta:
+        model = MasterCategory
+        fields = ['name']
+        labels = {
+            'name': 'Master Category Name',
+        }
+        help_texts = {
+            'name': 'Enter master category name (e.g., "Clothing", "Footwear")',
+        }
+
+
+class SubCategoryForm(CategoryFormMixin, forms.ModelForm):
+    class Meta:
+        model = SubCategory
+        fields = ['master_category', 'name']
+        labels = {
+            'master_category': 'Master Category',
+            'name': 'Subcategory Name',
+        }
+        help_texts = {
+            'master_category': 'Select master category',
+            'name': 'Enter subcategory name (e.g., "Shirts", "Sneakers")',
+        }
+
+    def __init__(self, *args, **kwargs):
+        master_category_id = kwargs.pop('master_category_id', None)
+        super().__init__(*args, **kwargs)
+
+        if master_category_id:
+            self.fields['master_category'].initial = master_category_id
+            self.fields['master_category'].queryset = MasterCategory.objects.filter(id=master_category_id)
+            self.fields['master_category'].widget.attrs['readonly'] = True
+
+
+class ArticleTypeForm(CategoryFormMixin, forms.ModelForm):
+    class Meta:
+        model = ArticleType
+        fields = ['sub_category', 'name']
+        labels = {
+            'sub_category': 'Subcategory',
+            'name': 'Article Type Name',
+        }
+        help_texts = {
+            'sub_category': 'Select subcategory',
+            'name': 'Enter article type name (e.g., "Casual Shirts", "Running Shoes")',
+        }
+
+    def __init__(self, *args, **kwargs):
+        sub_category_id = kwargs.pop('sub_category_id', None)
+        super().__init__(*args, **kwargs)
+
+        if sub_category_id:
+            self.fields['sub_category'].initial = sub_category_id
+            self.fields['sub_category'].queryset = SubCategory.objects.filter(id=sub_category_id)
+            self.fields['sub_category'].widget.attrs['readonly'] = True

@@ -10,7 +10,7 @@ User = get_user_model()
 
 
 class MasterCategory(models.Model):
-    name = models.TextField(unique=True)
+    name = models.CharField(max_length=50, unique=True)
     slug = AutoSlugField(populate_from='name', unique=True, blank=True)
 
     def __str__(self):
@@ -30,7 +30,7 @@ class SubCategory(models.Model):
         related_name='sub_categories',
         db_index=True
     )
-    name = models.TextField()
+    name = models.CharField(max_length=50)
     slug = AutoSlugField(populate_from='name', unique=True, blank=True)
 
     class Meta:
@@ -56,7 +56,7 @@ class ArticleType(models.Model):
         related_name='article_types',
         db_index=True
     )
-    name = models.TextField()
+    name = models.CharField(max_length=50)
     slug = AutoSlugField(populate_from='name', unique=True, blank=True)
 
     class Meta:

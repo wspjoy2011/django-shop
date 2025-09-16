@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from django import forms
 from django.contrib import messages
 from django.db import models
 from django.db.models import Prefetch, F, Exists, OuterRef
@@ -15,12 +16,17 @@ from apps.ratings.models import Rating, Like, Dislike
 
 
 class ProductAccessMixin(View):
+    error_message = "You do not have permission to add/edit/delete products."
 
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated or not request.user.is_staff:
-            messages.error(request, "You do not have permission to add/edit/delete products.")
+            messages.error(request, self.error_message)
             return redirect("catalog:home")
         return super().dispatch(request, *args, **kwargs)
+
+
+class CategoryAccessMixin:
+    error_message = "You do not have permission to add/edit/delete categories."
 
 
 class ProductQuerysetMixin:
@@ -96,7 +102,7 @@ class ProductQuerysetMixin:
 
         return queryset
 
-    def use_projection(self, only_fields = None):
+    def use_projection(self, only_fields=None):
         if not only_fields:
             meta = self.model._meta
             ordering = list(meta.ordering)
@@ -232,3 +238,28 @@ class ProductFilterContextMixin:
         params.pop("page", None)
         filter_query_string = urlencode(params, doseq=True)
         return f"&{filter_query_string}" if filter_query_string else ""
+
+
+class CategoryFormMixin:
+    fields: dict
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.set_field_styles()
+        self.set_name_field_maxlength()
+        self.update_name_help_text()
+
+    def set_field_styles(self):
+        for name, field in self.fields.items():
+            css_class = "form-select" if isinstance(field.widget, forms.Select) else "form-control"
+            field.widget.attrs.setdefault("class", css_class)
+            field.widget.attrs.setdefault("placeholder", field.label)
+
+    def set_name_field_maxlength(self):
+        if 'name' in self.fields:
+            self.fields['name'].widget.attrs.setdefault('maxlength', 50)
+
+    def update_name_help_text(self):
+        if 'name' in self.fields:
+            current_help_text = self.fields['name'].help_text or ''
+            self.fields['name'].help_text = f"{current_help_text} Maximum 50 characters."

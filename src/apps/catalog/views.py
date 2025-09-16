@@ -16,8 +16,8 @@ from django.views.generic import (
 from numpy import ceil
 
 from fixtures.utils import get_approximate_table_count
-from .forms import ProductForm
-from .mixins import ProductAccessMixin, ProductQuerysetMixin, ProductFilterContextMixin
+from .forms import ProductForm, MasterCategoryForm, SubCategoryForm, ArticleTypeForm
+from .mixins import ProductAccessMixin, ProductQuerysetMixin, ProductFilterContextMixin, CategoryAccessMixin
 from .models import (
     Product,
     MasterCategory,
@@ -330,3 +330,85 @@ class ProductDeleteView(ProductAccessMixin, LoginRequiredMixin, DeleteView):
             f'Product "{self.object.product_display_name}" has been deleted successfully.'
         )
         return super().form_valid(form)
+
+
+class CategoryCreateView(CategoryAccessMixin, CreateView):
+    template_name = "pages/catalog/category/create.html"
+
+    def get_form_class(self):
+        category_type = self.kwargs.get('category_type')
+        form_mapping = {
+            'master': MasterCategoryForm,
+            'sub': SubCategoryForm,
+            'article': ArticleTypeForm,
+        }
+        return form_mapping.get(category_type, MasterCategoryForm)
+
+    def get_model(self):
+        category_type = self.kwargs.get('category_type')
+        model_mapping = {
+            'master': MasterCategory,
+            'sub': SubCategory,
+            'article': ArticleType,
+        }
+        return model_mapping.get(category_type, MasterCategory)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        category_type = self.kwargs.get('category_type')
+
+        if category_type == 'sub' and 'master_id' in self.request.GET:
+            kwargs['master_category_id'] = self.request.GET.get('master_id')
+        elif category_type == 'article' and 'sub_id' in self.request.GET:
+            kwargs['sub_category_id'] = self.request.GET.get('sub_id')
+
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        category_type = self.kwargs.get('category_type')
+
+        context.update({
+            'category_type': category_type,
+            'category_type_display': {
+                'master': 'Master Category',
+                'sub': 'Subcategory',
+                'article': 'Article Type'
+            }.get(category_type, 'Category')
+        })
+
+        return context
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        category_type = self.kwargs.get('category_type')
+        category_name = form.cleaned_data.get('name')
+
+        messages.success(
+            self.request,
+            f'{category_type.title()} category "{category_name}" has been created successfully.'
+        )
+        return response
+
+    def form_invalid(self, form):
+        messages.error(
+            self.request,
+            "There were errors in your form. Please check the fields and try again."
+        )
+        return super().form_invalid(form)
+
+    def get_success_url(self):
+        category_type = self.kwargs.get('category_type')
+        if category_type == 'master':
+            return reverse_lazy("catalog:product_list")
+        elif category_type == 'sub':
+            master_slug = self.object.master_category.slug
+            return reverse_lazy("catalog:product_list_by_master", kwargs={"master_slug": master_slug})
+        elif category_type == 'article':
+            master_slug = self.object.sub_category.master_category.slug
+            sub_slug = self.object.sub_category.slug
+            return reverse_lazy("catalog:product_list_by_sub", kwargs={
+                "master_slug": master_slug,
+                "sub_slug": sub_slug
+            })
+        return reverse_lazy("catalog:product_list")

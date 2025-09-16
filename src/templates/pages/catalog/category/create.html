@@ -1,0 +1,58 @@
+{% extends "layout/base.html" %}
+{% load static %}
+{% load forms_extras %}
+
+{% block title %}Create {{ category_type_display }}{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/pages/category_create.css' %}">
+{% endblock %}
+
+{% block content %}
+  <div class="container my-5">
+    <div class="row justify-content-center">
+      <div class="col-lg-6">
+        <div class="category-create-card">
+          <div class="card-header">
+            <h2 class="card-title">
+              <i class="fas fa-plus-circle"></i>
+              Create {{ category_type_display }}
+            </h2>
+          </div>
+          <div class="card-body">
+            <form method="post" class="category-create-form">
+              {% csrf_token %}
+
+              {% non_field_errors form %}
+
+              {% for field in form %}
+                <div class="form-group">
+                  <label for="{{ field.id_for_label }}" class="form-label">
+                    {{ field.label }}
+                    {% if field.field.required %}<span class="text-danger">*</span>{% endif %}
+                  </label>
+                  {{ field }}
+                  {% if field.help_text %}
+                    <div class="form-help">{{ field.help_text }}</div>
+                  {% endif %}
+                  {% field_errors field %}
+                </div>
+              {% endfor %}
+
+              <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                  <i class="fas fa-save"></i>
+                  Create {{ category_type_display }}
+                </button>
+                <a href="{% url 'catalog:product_list' %}" class="btn btn-secondary">
+                  <i class="fas fa-arrow-left"></i>
+                  Cancel
+                </a>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
