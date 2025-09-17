@@ -37,6 +37,10 @@ urlpatterns = [
         views.FavoriteCollectionClearView.as_view(),
         name='favorite_collection_clear'),
     path(
+        'favorites/collections/<int:collection_id>/items/',
+        views.FavoriteItemsListAPIView.as_view(),
+        name='favorite_collection_items'),
+    path(
         'favorites/collections/<int:collection_id>/reorder/',
         views.FavoriteCollectionReorderAPIView.as_view(),
         name='favorite_collection_reorder'
@@ -49,5 +53,4 @@ urlpatterns = [
         'favorites/collections/count/',
         views.UserFavoritesCountView.as_view(),
         name='user_favorites_count'),
-
 ]

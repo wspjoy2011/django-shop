@@ -6,6 +6,7 @@ from django.db.models import Prefetch, Count
 from django.shortcuts import get_object_or_404, redirect
 from django.views.generic import ListView, DetailView
 
+from .mixins import FavoriteItemsQuerysetMixin
 from .models import FavoriteCollection, FavoriteItem
 
 User = get_user_model()
@@ -77,7 +78,7 @@ class FavoriteCollectionListView(LoginRequiredMixin, ListView):
         return context
 
 
-class FavoriteCollectionDetailView(DetailView):
+class FavoriteCollectionDetailView(FavoriteItemsQuerysetMixin, DetailView):
     model = FavoriteCollection
     template_name = 'pages/favorites/collection/detail.html'
     context_object_name = 'collection'
@@ -112,36 +113,6 @@ class FavoriteCollectionDetailView(DetailView):
             queryset,
             user__username=self.kwargs['username'],
             slug=self.kwargs['collection_slug']
-        )
-
-    def get_items_queryset(self, collection):
-        return (
-            FavoriteItem.objects
-            .filter(collection=collection)
-            .select_related(
-                'product',
-                'product__inventory',
-                'product__inventory__currency'
-            )
-            .only(
-                'id',
-                'position',
-                'note',
-
-                'product__product_display_name',
-                'product__image_url',
-                'product__slug',
-
-                'product__inventory__is_active',
-                'product__inventory__stock_quantity',
-                'product__inventory__reserved_quantity',
-                'product__inventory__base_price',
-                'product__inventory__sale_price',
-                'product__inventory__currency__symbol',
-                'product__inventory__currency__code',
-                'product__inventory__currency__decimals'
-            )
-            .order_by('position')
         )
 
     def get_context_data(self, **kwargs):

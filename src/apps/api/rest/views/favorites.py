@@ -1,21 +1,25 @@
-from rest_framework.generics import get_object_or_404
+from django.db.models import Q
+from rest_framework.generics import get_object_or_404, ListAPIView
 from rest_framework.response import Response
 from rest_framework import status
 
 from django.db import transaction
 
 from apps.catalog.models import Product
+from apps.favorites.mixins import FavoriteItemsQuerysetMixin
 from apps.favorites.models import FavoriteCollection, FavoriteItem
 
 from .base import BaseAPIView
 from ..mixins import FavoriteCollectionPermissionMixin
+from ..paginators import FavoriteItemsPagination
+from ..permissions import IsOwnerOrPublicReadOnly
 from ..serializers import (
     FavoriteToggleResponseSerializer,
     FavoriteCollectionCreateRequestSerializer,
     FavoriteCollectionCreateResponseSerializer,
     FavoriteCollectionSetDefaultResponseSerializer,
     MessageResponseSerializer,
-    UserFavoritesCountResponseSerializer, FavoriteCollectionReorderRequestSerializer
+    UserFavoritesCountResponseSerializer, FavoriteCollectionReorderRequestSerializer, FavoriteItemSerializer
 )
 from ..choices import FavoriteActionChoices
 
@@ -240,7 +244,6 @@ class FavoriteCollectionReorderAPIView(FavoriteCollectionPermissionMixin, BaseAP
             status.HTTP_200_OK
         )
 
-
     def _extract_items_data(self, items_data):
         requested_item_ids = []
         position_map = {}
@@ -271,3 +274,30 @@ class FavoriteCollectionReorderAPIView(FavoriteCollectionPermissionMixin, BaseAP
         with transaction.atomic():
             FavoriteItem.objects.bulk_update(existing_items, ['position'])
             collection.save(update_fields=['updated_at'])
+
+
+class FavoriteItemsListAPIView(FavoriteItemsQuerysetMixin, ListAPIView):
+    serializer_class = FavoriteItemSerializer
+    pagination_class = FavoriteItemsPagination
+    permission_classes = [IsOwnerOrPublicReadOnly]
+
+    def get_collection(self):
+        collection_id = self.kwargs.get('collection_id')
+        qs = FavoriteCollection.objects.all()
+
+        if self.request.user.is_authenticated:
+            qs = qs.filter(
+                Q(id=collection_id) & (Q(user=self.request.user) | Q(is_public=True))
+            )
+        else:
+            qs = qs.filter(Q(id=collection_id) & Q(is_public=True))
+
+        collection = get_object_or_404(qs)
+
+        self.check_object_permissions(self.request, collection)
+
+        return collection
+
+    def get_queryset(self):
+        collection = self.get_collection()
+        return self.get_items_queryset(collection)

@@ -11,7 +11,8 @@ from .favorites import (
     FavoriteCollectionDeleteView,
     FavoriteCollectionClearView,
     UserFavoritesCountView,
-    FavoriteCollectionReorderAPIView
+    FavoriteCollectionReorderAPIView,
+    FavoriteItemsListAPIView
 )
 
 __all__ = [
@@ -27,5 +28,6 @@ __all__ = [
     'FavoriteCollectionDeleteView',
     'FavoriteCollectionClearView',
     'UserFavoritesCountView',
-    'FavoriteCollectionReorderAPIView'
+    'FavoriteCollectionReorderAPIView',
+    'FavoriteItemsListAPIView',
 ]

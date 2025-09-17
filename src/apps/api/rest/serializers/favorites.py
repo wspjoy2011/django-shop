@@ -1,5 +1,7 @@
 from rest_framework import serializers
 
+from apps.catalog.models import Product
+from apps.favorites.models import FavoriteItem
 from ..choices import FavoriteActionChoices
 
 
@@ -101,3 +103,32 @@ class FavoriteCollectionReorderRequestSerializer(serializers.Serializer):
             raise serializers.ValidationError('Items list cannot be empty')
 
         return attrs
+
+
+class ProductInFavoriteSerializer(serializers.ModelSerializer):
+    price = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Product
+        fields = (
+            'product_display_name',
+            'image_url',
+            'slug',
+            'price'
+        )
+
+    def get_price(self, obj):
+        return obj.get_price()
+
+
+class FavoriteItemSerializer(serializers.ModelSerializer):
+    product = ProductInFavoriteSerializer(read_only=True)
+
+    class Meta:
+        model = FavoriteItem
+        fields = (
+            'id',
+            'position',
+            'note',
+            'product'
+        )

@@ -5,3 +5,12 @@ class IsCollectionOwnerPermission(BasePermission):
 
     def has_object_permission(self, request, view, obj):
         return obj.user == request.user
+
+
+class IsOwnerOrPublicReadOnly(BasePermission):
+
+    def has_object_permission(self, request, view, obj):
+        if obj.is_public:
+            return True
+
+        return request.user.is_authenticated and obj.user == request.user
