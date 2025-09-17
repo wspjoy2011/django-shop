@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.db.models import Prefetch, Count
 from django.shortcuts import get_object_or_404, redirect
 from django.views.generic import ListView, DetailView
@@ -15,6 +16,7 @@ class FavoriteCollectionListView(LoginRequiredMixin, ListView):
     template_name = 'pages/favorites/collection/list.html'
     context_object_name = 'collections'
     paginate_by = 12
+    favorite_items_per_card_limit = 10
 
     def get_queryset(self):
         slider_items_qs = (
@@ -40,7 +42,7 @@ class FavoriteCollectionListView(LoginRequiredMixin, ListView):
                 'product__inventory__currency__decimals',
             )
             .order_by('position')
-        )
+        )[:self.favorite_items_per_card_limit]
 
         return (
             FavoriteCollection.objects
@@ -79,6 +81,7 @@ class FavoriteCollectionDetailView(DetailView):
     model = FavoriteCollection
     template_name = 'pages/favorites/collection/detail.html'
     context_object_name = 'collection'
+    paginate_by = 12
 
     def dispatch(self, request, *args, **kwargs):
         response = super().dispatch(request, *args, **kwargs)
@@ -147,9 +150,22 @@ class FavoriteCollectionDetailView(DetailView):
 
         favorite_items_qs = self.get_items_queryset(collection)
 
-        favorite_items_list = list(favorite_items_qs)
+        page_obj = self.get_paginated_items(favorite_items_qs)
 
-        context['favorite_items'] = favorite_items_list
-        context['items_count'] = len(favorite_items_list)
+        context['favorite_items'] = page_obj
+        context['items_count'] = page_obj.paginator.count
 
         return context
+
+    def get_paginated_items(self, queryset):
+        paginator = Paginator(queryset, self.paginate_by)
+        page_number = self.request.GET.get('page')
+
+        try:
+            page_obj = paginator.page(page_number)
+        except PageNotAnInteger:
+            page_obj = paginator.page(1)
+        except EmptyPage:
+            page_obj = paginator.page(paginator.num_pages)
+
+        return page_obj

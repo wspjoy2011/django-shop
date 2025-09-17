@@ -9,7 +9,6 @@ from apps.favorites.models import FavoriteCollection, FavoriteItem
 
 from .base import BaseAPIView
 from ..mixins import FavoriteCollectionPermissionMixin
-from ..permissions import IsCollectionOwnerPermission
 from ..serializers import (
     FavoriteToggleResponseSerializer,
     FavoriteCollectionCreateRequestSerializer,
