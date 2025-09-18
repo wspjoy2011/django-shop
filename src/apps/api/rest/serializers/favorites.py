@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 from apps.catalog.models import Product
 from apps.favorites.models import FavoriteItem
+from apps.inventories.models import ProductInventory, Currency
 from ..choices import FavoriteActionChoices
 
 
@@ -105,20 +106,51 @@ class FavoriteCollectionReorderRequestSerializer(serializers.Serializer):
         return attrs
 
 
+class CurrencySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Currency
+        fields = ("symbol", "code", "decimals")
+
+
+class ProductInventorySerializer(serializers.ModelSerializer):
+    available_quantity = serializers.IntegerField(read_only=True)
+    is_in_stock = serializers.BooleanField(read_only=True)
+    current_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    is_on_sale = serializers.BooleanField(read_only=True)
+    discount_percentage = serializers.SerializerMethodField()
+    currency = CurrencySerializer(read_only=True)
+
+    class Meta:
+        model = ProductInventory
+        fields = (
+            "is_active",
+            "stock_quantity",
+            "reserved_quantity",
+            "base_price",
+            "sale_price",
+            "currency",
+            "available_quantity",
+            "is_in_stock",
+            "current_price",
+            "is_on_sale",
+            "discount_percentage",
+        )
+
+    def get_discount_percentage(self, obj):
+        return obj.discount_percentage
+
+
 class ProductInFavoriteSerializer(serializers.ModelSerializer):
-    price = serializers.SerializerMethodField()
+    inventory = ProductInventorySerializer(read_only=True)
 
     class Meta:
         model = Product
         fields = (
-            'product_display_name',
-            'image_url',
-            'slug',
-            'price'
+            "product_display_name",
+            "image_url",
+            "slug",
+            "inventory",
         )
-
-    def get_price(self, obj):
-        return obj.get_price()
 
 
 class FavoriteItemSerializer(serializers.ModelSerializer):
@@ -127,8 +159,8 @@ class FavoriteItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = FavoriteItem
         fields = (
-            'id',
-            'position',
-            'note',
-            'product'
+            "id",
+            "position",
+            "note",
+            "product",
         )

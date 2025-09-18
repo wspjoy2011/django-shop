@@ -7,6 +7,7 @@
 {% block extra_css %}
   <link rel="stylesheet" href="{% static 'css/pages/collection-detail.css' %}">
   <link rel="stylesheet" href="{% static 'css/components/product-price.css' %}">
+  <link rel="stylesheet" href="{% static 'css/components/load-more.css' %}">
 {% endblock %}
 
 {% block extra_js %}
@@ -78,7 +79,8 @@
                       {% if product.image_url %}
                         {% if stock.is_active and stock.in_stock %}
                           <a href="{{ product.get_absolute_url }}" class="favorite-image-link">
-                            <img src="{{ product.image_url }}" alt="{{ product.product_display_name }}" class="favorite-image">
+                            <img src="{{ product.image_url }}" alt="{{ product.product_display_name }}"
+                                 class="favorite-image">
                             <div class="image-overlay">
                               <div class="overlay-content">
                                 <i class="fas fa-eye"></i>
@@ -88,7 +90,8 @@
                           </a>
                         {% else %}
                           <div class="favorite-image-link disabled">
-                            <img src="{{ product.image_url }}" alt="{{ product.product_display_name }}" class="favorite-image">
+                            <img src="{{ product.image_url }}" alt="{{ product.product_display_name }}"
+                                 class="favorite-image">
                             <div class="image-overlay disabled">
                               <div class="overlay-content">
                                 <i class="fas fa-ban"></i>
@@ -192,7 +195,20 @@
         {% endfor %}
       </div>
 
-       <!-- Pagination -->
+      <!-- Load More Button -->
+      {% if favorite_items.has_other_pages %}
+        <div class="load-more-container"
+             data-collection-id="{{ collection.id }}"
+             data-next-page="{{ favorite_items.next_page_number }}"
+             data-is-authenticated="{% if request.user.is_authenticated %}1{% else %}0{% endif %}">>
+          <button class="btn-load-more" id="load-more-btn">
+            <span class="spinner-border" role="status" aria-hidden="true" style="display: none;"></span>
+            <span class="btn-text">Load More</span>
+          </button>
+        </div>
+      {% endif %}
+
+      <!-- Pagination -->
       {% if favorite_items.has_other_pages %}
         <div class="row mt-5">
           <div class="col-12">

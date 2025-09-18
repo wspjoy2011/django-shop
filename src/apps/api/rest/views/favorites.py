@@ -281,23 +281,24 @@ class FavoriteItemsListAPIView(FavoriteItemsQuerysetMixin, ListAPIView):
     pagination_class = FavoriteItemsPagination
     permission_classes = [IsOwnerOrPublicReadOnly]
 
-    def get_collection(self):
-        collection_id = self.kwargs.get('collection_id')
-        qs = FavoriteCollection.objects.all()
+    def get_object(self):
+        if hasattr(self, "_collection"):
+            return self._collection
+
+        collection_id = self.kwargs.get("collection_id")
+        qs = FavoriteCollection.objects.filter(id=collection_id)
 
         if self.request.user.is_authenticated:
-            qs = qs.filter(
-                Q(id=collection_id) & (Q(user=self.request.user) | Q(is_public=True))
-            )
+            qs = qs.filter(Q(user=self.request.user) | Q(is_public=True))
         else:
-            qs = qs.filter(Q(id=collection_id) & Q(is_public=True))
+            qs = qs.filter(is_public=True)
 
         collection = get_object_or_404(qs)
-
         self.check_object_permissions(self.request, collection)
 
-        return collection
+        self._collection = collection
+        return self._collection
 
     def get_queryset(self):
-        collection = self.get_collection()
+        collection = self.get_object()
         return self.get_items_queryset(collection)

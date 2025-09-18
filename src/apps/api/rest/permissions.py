@@ -13,4 +13,4 @@ class IsOwnerOrPublicReadOnly(BasePermission):
         if obj.is_public:
             return True
 
-        return request.user.is_authenticated and obj.user == request.user
+        return request.user.is_authenticated and obj.user_id == request.user.id
