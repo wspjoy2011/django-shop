@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 import os
 import socket
 import warnings
+from datetime import timedelta
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -77,6 +78,7 @@ INSTALLED_APPS = [
     # Project apps
     'apps.accounts',
     'apps.api.rest',
+    'apps.cart',
     'apps.catalog',
     'apps.inventories',
     'apps.favorites',
@@ -231,3 +233,7 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.SessionAuthentication',
     ],
 }
+
+# Cart token
+
+CART_TOKEN_LIFETIME = timedelta(days=90)
