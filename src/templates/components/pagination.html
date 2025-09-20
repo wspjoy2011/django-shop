@@ -4,27 +4,23 @@
 
       <!-- Previous Page -->
       {% if items.has_previous %}
-        <li class="page-item">
+        <li class="page-item" id="pg-first">
           <a class="page-link" href="?page=1{{ filter_query_string }}" aria-label="First">
             <span aria-hidden="true"><i class="fas fa-angle-double-left"></i></span>
           </a>
         </li>
-        <li class="page-item">
+        <li class="page-item" id="pg-prev">
           <a class="page-link" href="?page={{ items.previous_page_number }}{{ filter_query_string }}"
              aria-label="Previous">
             <span aria-hidden="true"><i class="fas fa-angle-left"></i></span>
           </a>
         </li>
       {% else %}
-        <li class="page-item disabled">
-          <span class="page-link">
-            <i class="fas fa-angle-double-left"></i>
-          </span>
+        <li class="page-item disabled" id="pg-first">
+          <span class="page-link"><i class="fas fa-angle-double-left"></i></span>
         </li>
-        <li class="page-item disabled">
-          <span class="page-link">
-            <i class="fas fa-angle-left"></i>
-          </span>
+        <li class="page-item disabled" id="pg-prev">
+          <span class="page-link"><i class="fas fa-angle-left"></i></span>
         </li>
       {% endif %}
 
@@ -32,7 +28,7 @@
       {% for num in items.paginator.page_range %}
         {% if items.number == num %}
           <li class="page-item active">
-            <span class="page-link">{{ num }}</span>
+            <span class="page-link" id="pg-current">{{ num }}</span> {# ← текущая страница #}
           </li>
         {% elif num > items.number|add:'-3' and num < items.number|add:'3' %}
           <li class="page-item">
@@ -43,15 +39,11 @@
             <a class="page-link" href="?page={{ num }}{{ filter_query_string }}">{{ num }}</a>
           </li>
           {% if items.number > 4 %}
-            <li class="page-item disabled">
-              <span class="page-link">...</span>
-            </li>
+            <li class="page-item disabled"><span class="page-link">...</span></li>
           {% endif %}
         {% elif num == items.paginator.num_pages %}
           {% if items.number < items.paginator.num_pages|add:'-3' %}
-            <li class="page-item disabled">
-              <span class="page-link">...</span>
-            </li>
+            <li class="page-item disabled"><span class="page-link">...</span></li>
           {% endif %}
           <li class="page-item">
             <a class="page-link" href="?page={{ num }}{{ filter_query_string }}">{{ num }}</a>
@@ -61,26 +53,22 @@
 
       <!-- Next Page -->
       {% if items.has_next %}
-        <li class="page-item">
+        <li class="page-item" id="pg-next">
           <a class="page-link" href="?page={{ items.next_page_number }}{{ filter_query_string }}" aria-label="Next">
             <span aria-hidden="true"><i class="fas fa-angle-right"></i></span>
           </a>
         </li>
-        <li class="page-item">
+        <li class="page-item" id="pg-last">
           <a class="page-link" href="?page={{ items.paginator.num_pages }}{{ filter_query_string }}" aria-label="Last">
             <span aria-hidden="true"><i class="fas fa-angle-double-right"></i></span>
           </a>
         </li>
       {% else %}
-        <li class="page-item disabled">
-          <span class="page-link">
-            <i class="fas fa-angle-right"></i>
-          </span>
+        <li class="page-item disabled" id="pg-next">
+          <span class="page-link"><i class="fas fa-angle-right"></i></span>
         </li>
-        <li class="page-item disabled">
-          <span class="page-link">
-            <i class="fas fa-angle-double-right"></i>
-          </span>
+        <li class="page-item disabled" id="pg-last">
+          <span class="page-link"><i class="fas fa-angle-double-right"></i></span>
         </li>
       {% endif %}
     </ul>

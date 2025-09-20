@@ -136,7 +136,7 @@ class CollectionReorderHandler extends BaseComponent {
             this.dragState.placeholder.parentNode.insertBefore(draggedItem, this.dragState.placeholder);
             void this.saveNewOrder();
         } else {
-             this.dragState.draggedItem.parentNode.insertBefore(draggedItem, this.dragState.items[oldIndex].nextSibling);
+            this.dragState.draggedItem.parentNode.insertBefore(draggedItem, this.dragState.items[oldIndex].nextSibling);
         }
 
         this.cleanupDrag();
@@ -229,8 +229,15 @@ class CollectionReorderHandler extends BaseComponent {
     }
 
     handleLogoutDetection() {
+        const grid = document.querySelector(this.selectors.grid);
+
+        const slug = grid.dataset.collectionSlug;
+        const username = grid.dataset.collectionUsername;
+        const nextPath = `/favorites/collections/${username}/${slug}/`;
+        const loginUrl = `/accounts/login/?next=${encodeURIComponent(nextPath)}`;
+
         AuthenticationHandler.handleGlobalLogout(this.authBroadcastManager, {
-            redirectUrl: window.location.href,
+            redirectUrl: loginUrl,
             message: 'Session expired. Please log in to reorder items.'
         });
     }

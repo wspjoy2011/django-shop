@@ -19,7 +19,9 @@ from ..serializers import (
     FavoriteCollectionCreateResponseSerializer,
     FavoriteCollectionSetDefaultResponseSerializer,
     MessageResponseSerializer,
-    UserFavoritesCountResponseSerializer, FavoriteCollectionReorderRequestSerializer, FavoriteItemSerializer
+    UserFavoritesCountResponseSerializer,
+    FavoriteCollectionReorderRequestSerializer,
+    FavoriteItemSerializer
 )
 from ..choices import FavoriteActionChoices
 

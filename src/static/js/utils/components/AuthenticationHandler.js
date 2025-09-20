@@ -1,5 +1,5 @@
-import { isLoginRedirectResponse, isLoginRedirectErrorLike } from '../httpAuth.js';
-import { MessageManager } from './MessageManager.js';
+import {isLoginRedirectResponse, isLoginRedirectErrorLike} from '../httpAuth.js';
+import {MessageManager} from './MessageManager.js';
 
 let isLogoutHandled = false;
 
@@ -9,47 +9,17 @@ export class AuthenticationHandler {
         return component.dataset.authenticated === 'true';
     }
 
-    static handleLogoutDetection(component, broadcastManager, options = {}) {
-        const {
-            loginUrl = null,
-            messageManager = null,
-            messageContainer = null,
-            resetCallback = null,
-            productIdGetter = null
-        } = options;
-
-        const componentsToUpdate = productIdGetter ?
-            productIdGetter(component) : [component];
-
-        componentsToUpdate.forEach(comp => {
-            this.resetAuthenticationState(comp, resetCallback);
-        });
-
-        if (broadcastManager) {
-            const broadcastData = productIdGetter ?
-                productIdGetter(component, true) : {};
-            broadcastManager.broadcast('logout_detected', broadcastData);
-        }
-
-        const message = loginUrl ? 'Session expired.' : 'Session expired.';
-        if (messageManager && messageContainer) {
-            messageManager.showMessage(message, 'warning', messageContainer);
-        }
-    }
-
     static handleGlobalLogout(authBroadcastManager, options = {}) {
-        if (isLogoutHandled) {
-            return;
-        }
+        if (isLogoutHandled) return;
         isLogoutHandled = true;
 
-        const { redirectUrl = null, redirectTimeout = 3000 } = options;
+        const {redirectUrl = null, redirectTimeout = 3000} = options;
 
         const message = redirectUrl
             ? 'Your session has expired. You will be redirected to the login page.'
             : 'Your session has expired. Please log in again.';
 
-        MessageManager.showGlobalMessage(message, 'warning', { timeout: redirectTimeout });
+        MessageManager.showGlobalMessage(message, 'warning', {timeout: redirectTimeout});
 
         if (authBroadcastManager) {
             authBroadcastManager.broadcast('logout_detected', {});
@@ -75,7 +45,7 @@ export class AuthenticationHandler {
     }
 
     static applyUnauthenticatedState(component, options = {}) {
-        const { cssClasses = {}, selectors = {}, resetCallback = null } = options;
+        const {cssClasses = {}, selectors = {}, resetCallback = null} = options;
 
         component.dataset.authenticated = 'false';
 

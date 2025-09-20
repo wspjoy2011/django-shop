@@ -12,6 +12,7 @@
 
 {% block extra_js %}
   <script type="module" src="{% static 'js/components/collection-reorder.js' %}" defer></script>
+  <script type="module" src="{% static 'js/components/load-more.js' %}" defer></script>
 {% endblock %}
 
 {% block content %}
@@ -55,7 +56,9 @@
       <div class="row g-4"
            id="collection-items-grid"
            data-collection-id="{{ collection.id }}"
-           data-can-reorder="{% if request.user == collection.user %}true{% else %}false{% endif %}">
+           data-can-reorder="{% if request.user == collection.user %}true{% else %}false{% endif %}"
+           data-collection-slug="{{ collection.slug }}"
+           data-collection-username="{{ collection.user.username }}">
         {% for favorite_item in favorite_items %}
           {% with product=favorite_item.product %}
             {% with stock=product.get_stock_status %}
@@ -196,16 +199,22 @@
       </div>
 
       <!-- Load More Button -->
-      {% if favorite_items.has_other_pages %}
+      {% if favorite_items.has_next  %}
         <div class="load-more-container"
              data-collection-id="{{ collection.id }}"
+             data-collection-slug="{{ collection.slug }}"
+             data-collection-username="{{ collection.user.username }}"
              data-next-page="{{ favorite_items.next_page_number }}"
-             data-is-authenticated="{% if request.user.is_authenticated %}1{% else %}0{% endif %}">>
+             data-is-authenticated="{% if request.user.is_authenticated %}1{% else %}0{% endif %}"
+             data-is-owner="{% if request.user == collection.user %}1{% else %}0{% endif %}">
           <button class="btn-load-more" id="load-more-btn">
             <span class="spinner-border" role="status" aria-hidden="true" style="display: none;"></span>
             <span class="btn-text">Load More</span>
           </button>
         </div>
+        <script type="text/template" id="favorite-card-template">
+          {% include 'components/favorites/favorite_item_empty_template.html' %}
+        </script>
       {% endif %}
 
       <!-- Pagination -->

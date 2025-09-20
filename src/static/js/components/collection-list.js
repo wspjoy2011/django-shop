@@ -267,7 +267,9 @@ class CollectionList extends BaseComponent {
     }
 
     async handleClearCollection(component, collectionId, button) {
-        const collectionName = this.getCollectionNameFromTitle(component.querySelector('.collection-title'));
+        const collectionName = this.getCollectionNameFromTitle(
+            component.querySelector('.collection-title')
+        );
         this.currentDeleteCollectionId = collectionId;
         this.currentModalMode = 'clear';
         this.openDeleteModal(collectionName, 'clear');
@@ -314,7 +316,9 @@ class CollectionList extends BaseComponent {
 
     async handleDeleteCollection(component, collectionId) {
         const deleteUrl = this.deleteUrl.replace('{id}', collectionId);
-        const collectionName = this.getCollectionNameFromTitle(component.querySelector('.collection-title'));
+        const collectionName = this.getCollectionNameFromTitle(
+            component.querySelector('.collection-title')
+        );
 
         try {
             const response = await this.httpClient.sendRequest(deleteUrl, {method: 'DELETE'});
@@ -322,7 +326,10 @@ class CollectionList extends BaseComponent {
             if (response.ok) {
                 this.removeCollectionFromGrid(collectionId);
                 this.sortCollectionCards();
-                MessageManager.showGlobalMessage(`Collection "${collectionName}" has been deleted successfully.`, 'success');
+                MessageManager.showGlobalMessage(
+                    `Collection "${collectionName}" has been deleted successfully.`,
+                    'success'
+                );
                 this.broadcastCollectionDeleted(collectionId, collectionName);
             } else if (response.status === 409) {
                 this.currentDeleteCollectionId = collectionId;
@@ -330,13 +337,19 @@ class CollectionList extends BaseComponent {
                 this.openDeleteModal(collectionName, 'delete');
             } else {
                 const errorData = await response.json();
-                MessageManager.showGlobalMessage(errorData.message || 'Failed to delete collection.', 'error');
+                MessageManager.showGlobalMessage(
+                    errorData.message || 'Failed to delete collection.',
+                    'error'
+                );
             }
         } catch (error) {
             if (AuthenticationHandler.isAuthenticationError(error)) {
                 this.handleLogoutDetection();
             } else {
-                MessageManager.showGlobalMessage('A network error occurred while trying to delete the collection.', 'error');
+                MessageManager.showGlobalMessage(
+                    'A network error occurred while trying to delete the collection.',
+                    'error'
+                );
             }
         }
     }
@@ -380,7 +393,10 @@ class CollectionList extends BaseComponent {
             if (AuthenticationHandler.isAuthenticationError(error)) {
                 this.handleLogoutDetection();
             } else {
-                MessageManager.showGlobalMessage(error.message || 'Failed to clear collection. Please try again.', 'error');
+                MessageManager.showGlobalMessage(
+                    error.message || 'Failed to clear collection. Please try again.',
+                    'error'
+                );
                 this.closeDeleteModal();
             }
         } finally {
@@ -413,7 +429,10 @@ class CollectionList extends BaseComponent {
 
             this.removeCollectionFromGrid(collectionId);
             this.sortCollectionCards();
-            MessageManager.showGlobalMessage(`Collection "${collectionName}" has been deleted successfully.`, 'success');
+            MessageManager.showGlobalMessage(
+                `Collection "${collectionName}" has been deleted successfully.`,
+                'success'
+            );
             this.broadcastCollectionDeleted(collectionId, collectionName);
             this.closeDeleteModal();
 
@@ -421,7 +440,10 @@ class CollectionList extends BaseComponent {
             if (AuthenticationHandler.isAuthenticationError(error)) {
                 this.handleLogoutDetection();
             } else {
-                MessageManager.showGlobalMessage(error.message || 'Failed to delete collection. Please try again.', 'error');
+                MessageManager.showGlobalMessage(
+                    error.message || 'Failed to delete collection. Please try again.',
+                    'error'
+                );
                 this.closeDeleteModal();
             }
         } finally {

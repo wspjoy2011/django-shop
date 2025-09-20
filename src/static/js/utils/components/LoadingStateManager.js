@@ -58,26 +58,6 @@ export class LoadingStateManager {
         return component.querySelector(`.${cssClass}`) !== null;
     }
 
-    static disableButtons(buttons, disabled = true, options = {}) {
-        const { cssClass = null, pointerEvents = false } = options;
-
-        const buttonsList = Array.isArray(buttons) ? buttons : [buttons];
-
-        buttonsList.forEach(button => {
-            if (!button) return;
-
-            button.disabled = disabled;
-
-            if (cssClass) {
-                button.classList.toggle(cssClass, disabled);
-            }
-
-            if (pointerEvents) {
-                button.style.pointerEvents = disabled ? 'none' : '';
-            }
-        });
-    }
-
     static setModalLoadingState(modal, isLoading, selectors = {}, cssClasses = {}) {
         if (!modal) return;
 

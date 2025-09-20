@@ -100,7 +100,9 @@ class LikesDislikesHandler extends BaseComponent {
     setupAuthUI() {
         document.querySelectorAll(this.selectors.component).forEach(component => {
             const isAuthenticated = AuthenticationHandler.validateAuthentication(component);
-            const buttons = component.querySelectorAll(`${this.selectors.likeButton}, ${this.selectors.dislikeButton}`);
+            const buttons = component.querySelectorAll(
+                `${this.selectors.likeButton}, ${this.selectors.dislikeButton}`
+            );
 
             if (!isAuthenticated) {
                 component.classList.add(this.cssClasses.unauthenticated);
@@ -169,12 +171,22 @@ class LikesDislikesHandler extends BaseComponent {
                     onLoginRedirect: (loginUrl) => this.handleLogoutDetection(component, loginUrl),
                     onSuccess: (data) => {
                         this.updateUI(component, data, type);
-                        this.broadcastLikeDislikeUpdate(component, data.action, data.likes_count, data.dislikes_count, type);
+                        this.broadcastLikeDislikeUpdate(
+                            component,
+                            data.action,
+                            data.likes_count,
+                            data.dislikes_count,
+                            type)
+                        ;
                         this.showFeedback(data.action, type, component);
                     },
                     onError: (error) => {
-                        console.warn('Server response (non-OK):', error.message);
-                        MessageManager.showMessage('Failed to update rating. Please try again.', 'error', component.querySelector(this.selectors.messageContainer), MessageManager.LIKES_CONFIG);
+                        MessageManager.showMessage(
+                            'Failed to update rating. Please try again.',
+                            'error',
+                            component.querySelector(this.selectors.messageContainer),
+                            MessageManager.LIKES_CONFIG
+                        );
                     }
                 }
             );
@@ -184,7 +196,12 @@ class LikesDislikesHandler extends BaseComponent {
             if (AuthenticationHandler.isAuthenticationError(error)) {
                 this.handleLogoutDetection(component);
             } else {
-                MessageManager.showMessage('Failed to update rating. Please try again.', 'error', component.querySelector(this.selectors.messageContainer), MessageManager.LIKES_CONFIG);
+                MessageManager.showMessage(
+                    'Failed to update rating. Please try again.',
+                    'error',
+                    component.querySelector(this.selectors.messageContainer),
+                    MessageManager.LIKES_CONFIG
+                );
             }
         } finally {
             this.setLoadingState(component, false);
@@ -269,7 +286,12 @@ class LikesDislikesHandler extends BaseComponent {
     }
 
     showAuthenticationMessage(component) {
-        MessageManager.showMessage('Login required', 'info', component.querySelector(this.selectors.messageContainer), MessageManager.LIKES_CONFIG);
+        MessageManager.showMessage(
+            'Login required',
+            'info',
+            component.querySelector(this.selectors.messageContainer),
+            MessageManager.LIKES_CONFIG
+        );
     }
 
     showFeedback(action, type, component) {
@@ -279,7 +301,11 @@ class LikesDislikesHandler extends BaseComponent {
             disliked: '👎 Disliked!',
             undisliked: 'Dislike removed'
         };
-        MessageManager.showMessage(messages[action] || `${action} successful`, 'success', component.querySelector(this.selectors.messageContainer), MessageManager.LIKES_CONFIG);
+        MessageManager.showMessage(
+            messages[action] || `${action} successful`,
+            'success', component.querySelector(this.selectors.messageContainer),
+            MessageManager.LIKES_CONFIG
+        );
     }
 
     resetSelectionState(component) {
