@@ -164,3 +164,8 @@ class FavoriteItemSerializer(serializers.ModelSerializer):
             "note",
             "product",
         )
+
+
+class FavoriteCollectionPrivacyToggleResponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    is_public = serializers.BooleanField()

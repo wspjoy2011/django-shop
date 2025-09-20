@@ -12,7 +12,7 @@ from apps.favorites.models import FavoriteCollection, FavoriteItem
 from .base import BaseAPIView
 from ..mixins import FavoriteCollectionPermissionMixin
 from ..paginators import FavoriteItemsPagination
-from ..permissions import IsOwnerOrPublicReadOnly
+from ..permissions import IsOwnerOrPublicReadOnly, IsCollectionOwnerPermission
 from ..serializers import (
     FavoriteToggleResponseSerializer,
     FavoriteCollectionCreateRequestSerializer,
@@ -21,7 +21,7 @@ from ..serializers import (
     MessageResponseSerializer,
     UserFavoritesCountResponseSerializer,
     FavoriteCollectionReorderRequestSerializer,
-    FavoriteItemSerializer
+    FavoriteItemSerializer, FavoriteCollectionPrivacyToggleResponseSerializer
 )
 from ..choices import FavoriteActionChoices
 
@@ -304,3 +304,25 @@ class FavoriteItemsListAPIView(FavoriteItemsQuerysetMixin, ListAPIView):
     def get_queryset(self):
         collection = self.get_object()
         return self.get_items_queryset(collection)
+
+
+class FavoriteCollectionPrivacyToggleAPIView(FavoriteCollectionPermissionMixin, BaseAPIView):
+
+    def post(self, request, collection_id):
+        collection = get_object_or_404(FavoriteCollection, id=collection_id)
+
+        self.check_owner_permission(request, collection)
+
+        collection.is_public = not collection.is_public
+        collection.save(update_fields=['is_public', 'updated_at'])
+
+        response_data = {
+            "id": collection.id,
+            "is_public": collection.is_public
+        }
+
+        return self.return_success_response(
+            response_data,
+            FavoriteCollectionPrivacyToggleResponseSerializer,
+            status.HTTP_201_CREATED
+        )
