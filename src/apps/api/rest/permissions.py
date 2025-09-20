@@ -4,7 +4,7 @@ from rest_framework.permissions import BasePermission
 class IsCollectionOwnerPermission(BasePermission):
 
     def has_object_permission(self, request, view, obj):
-        return obj.user == request.user
+        return request.user.is_authenticated and obj.user_id == request.user.id
 
 
 class IsOwnerOrPublicReadOnly(BasePermission):

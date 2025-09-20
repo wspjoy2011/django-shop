@@ -1,0 +1,24 @@
+#collection-visibility-badge {
+  transition: transform .12s ease-out, opacity .12s ease-out;
+}
+
+#collection-visibility-badge.is-loading {
+  pointer-events: none;
+  opacity: .85;
+}
+
+#collection-visibility-badge .toggle-spinner {
+  display: inline-block;
+  width: 1.1em;
+  height: 1.1em;
+  vertical-align: -0.15em;
+  margin-right: .35rem;
+  border: .15em solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: vis-spin .65s linear infinite;
+}
+
+@keyframes vis-spin {
+  to { transform: rotate(360deg); }
+}
