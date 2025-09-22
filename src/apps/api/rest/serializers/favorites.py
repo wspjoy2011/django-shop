@@ -169,3 +169,15 @@ class FavoriteItemSerializer(serializers.ModelSerializer):
 class FavoriteCollectionPrivacyToggleResponseSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     is_public = serializers.BooleanField()
+
+
+class FavoriteItemsBulkDeleteRequestSerializer(serializers.Serializer):
+    item_ids = serializers.ListField(
+        child=serializers.IntegerField(min_value=1),
+        allow_empty=False
+    )
+
+    def validate_item_ids(self, value):
+        if len(value) > 200:
+            raise serializers.ValidationError('Too many items. Max 200 per request.')
+        return list(set(value))

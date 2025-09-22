@@ -41,6 +41,11 @@ urlpatterns = [
         views.FavoriteItemsListAPIView.as_view(),
         name='favorite_collection_items'),
     path(
+        'favorites/collections/<int:collection_id>/items/bulk-delete/',
+        views.FavoriteItemsBulkDeleteAPIView.as_view(),
+        name='favorite_collection_items_bulk_delete',
+    ),
+    path(
         'favorites/collections/<int:collection_id>/reorder/',
         views.FavoriteCollectionReorderAPIView.as_view(),
         name='favorite_collection_reorder'

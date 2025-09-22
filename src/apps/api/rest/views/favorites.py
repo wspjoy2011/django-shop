@@ -21,7 +21,7 @@ from ..serializers import (
     MessageResponseSerializer,
     UserFavoritesCountResponseSerializer,
     FavoriteCollectionReorderRequestSerializer,
-    FavoriteItemSerializer, FavoriteCollectionPrivacyToggleResponseSerializer
+    FavoriteItemSerializer, FavoriteCollectionPrivacyToggleResponseSerializer, FavoriteItemsBulkDeleteRequestSerializer
 )
 from ..choices import FavoriteActionChoices
 
@@ -326,3 +326,24 @@ class FavoriteCollectionPrivacyToggleAPIView(FavoriteCollectionPermissionMixin, 
             FavoriteCollectionPrivacyToggleResponseSerializer,
             status.HTTP_201_CREATED
         )
+
+
+class FavoriteItemsBulkDeleteAPIView(FavoriteCollectionPermissionMixin, BaseAPIView):
+
+    def post(self, request, collection_id: int):
+        collection = get_object_or_404(FavoriteCollection, id=collection_id)
+
+        self.check_owner_permission(request, collection)
+
+        serializer = FavoriteItemsBulkDeleteRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        item_ids = serializer.validated_data['item_ids']
+
+        with transaction.atomic():
+            (
+                FavoriteItem.objects
+                .filter(collection=collection, id__in=item_ids)
+                .delete()
+            )
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
