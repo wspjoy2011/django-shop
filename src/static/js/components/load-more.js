@@ -8,6 +8,8 @@ class LoadMoreFavorites extends BaseComponent {
     constructor() {
         super({broadcastChannelName: 'favorite-items'});
         this.selectors = {
+            meta: '#collection-meta',
+
             grid: '#collection-items-grid',
             container: '.load-more-container',
             button: '#load-more-btn',
@@ -44,7 +46,10 @@ class LoadMoreFavorites extends BaseComponent {
                 next: '#pg-next',
                 last: '#pg-last',
                 current: '#pg-current'
-            }
+            },
+
+            selectBlock: '.favorite-select',
+            selectInput: '.favorite-delete-checkbox'
         };
 
         this.cssClasses = {
@@ -187,7 +192,10 @@ class LoadMoreFavorites extends BaseComponent {
 
         const product = favoriteItem.product || {};
         const inventory = product.inventory || {};
-        const isOwner = container?.dataset.isOwner === '1';
+
+        const meta = document.querySelector(this.selectors.meta);
+        const isOwner = meta?.dataset.isOwner === '1';
+
         const isActive = !!inventory.is_active;
         const isInStock = !!inventory.is_in_stock;
         const isAvailable = isActive && isInStock;
@@ -202,6 +210,8 @@ class LoadMoreFavorites extends BaseComponent {
         this.updateStatus(node, isAvailable, isActive);
         this.updatePrice(node, inventory, isAvailable);
         this.updateNote(node, favoriteItem.note);
+
+        this.updateSelection(node, favoriteItem.id, isOwner);
 
         return node;
     }
@@ -322,6 +332,21 @@ class LoadMoreFavorites extends BaseComponent {
             if (noteBlock) noteBlock.style.display = '';
         } else {
             if (noteBlock) noteBlock.style.display = 'none';
+        }
+    }
+
+    updateSelection(node, favoriteItemId, isOwner) {
+        const selectBlock = node.querySelector(this.selectors.selectBlock);
+        const selectInput = node.querySelector(this.selectors.selectInput);
+
+        if (!selectBlock || !selectInput) return;
+
+        if (isOwner) {
+            selectBlock.style.display = '';
+            selectInput.value = String(favoriteItemId);
+        } else {
+            selectBlock.style.display = 'none';
+            selectInput.value = '';
         }
     }
 

@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="{% static 'css/components/product-price.css' %}">
   <link rel="stylesheet" href="{% static 'css/components/load-more.css' %}">
   <link rel="stylesheet" href="{% static 'css/components/privacy-toggle.css' %}">
+  <link rel="stylesheet" href="{% static 'css/components/favorite-select.css' %}">
 {% endblock %}
 
 {% block extra_js %}
@@ -184,6 +185,20 @@
                           </div>
                         {% endif %}
                       </div>
+
+                      <!-- Delete section -->
+                      {% if request.user == collection.user %}
+                        <div class="favorite-select">
+                          <label class="select-checkbox">
+                            <input class="favorite-delete-checkbox"
+                                   type="checkbox"
+                                   value="{{ favorite_item.id }}"
+                                   aria-label="Mark to remove"/>
+                            <span class="checkbox-visual"></span>
+                            <span class="checkbox-label">Select to remove</span>
+                          </label>
+                        </div>
+                      {% endif %}
 
                       <!-- Note Section -->
                       {% if favorite_item.note %}
