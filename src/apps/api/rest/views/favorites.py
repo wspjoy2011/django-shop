@@ -1,4 +1,5 @@
-from django.db.models import Q
+from django.db.models import Q, Sum, F
+from django.db.models.functions import Coalesce
 from rest_framework.generics import get_object_or_404, ListAPIView
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -13,7 +14,7 @@ from apps.favorites.models import FavoriteCollection, FavoriteItem
 from .base import BaseAPIView
 from ..mixins import FavoriteCollectionPermissionMixin
 from ..paginators import FavoriteItemsCursorPagination
-from ..permissions import IsOwnerOrPublicReadOnly, IsCollectionOwnerPermission
+from ..permissions import IsOwnerOrPublicReadOnly
 from ..serializers import (
     FavoriteToggleResponseSerializer,
     FavoriteCollectionCreateRequestSerializer,
@@ -22,8 +23,11 @@ from ..serializers import (
     MessageResponseSerializer,
     UserFavoritesCountResponseSerializer,
     FavoriteCollectionReorderRequestSerializer,
-    FavoriteItemSerializer, FavoriteCollectionPrivacyToggleResponseSerializer, FavoriteItemsBulkDeleteRequestSerializer,
-    FavoriteCountResponseSerializer
+    FavoriteItemSerializer,
+    FavoriteCollectionPrivacyToggleResponseSerializer,
+    FavoriteItemsBulkDeleteRequestSerializer,
+    FavoriteCountResponseSerializer,
+    FavoriteTotalValueResponseSerializer
 )
 from ..choices import FavoriteActionChoices
 
@@ -365,5 +369,37 @@ class FavoriteCollectionItemsCountAPIView(FavoriteCollectionPermissionMixin, Bas
         return self.return_success_response(
             data={'count': count},
             serializer_class=FavoriteCountResponseSerializer,
+            status_code=status.HTTP_200_OK
+        )
+
+
+class FavoriteCollectionTotalValueAPIView(FavoriteCollectionPermissionMixin, BaseAPIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, collection_id: int):
+        collection = get_object_or_404(FavoriteCollection, id=collection_id)
+
+        if not collection.is_public:
+            self.check_owner_permission(request, collection)
+
+        agg = (
+            FavoriteItem.objects
+            .filter(collection=collection)
+            .aggregate(total_value=Sum(Coalesce(
+                F('product__inventory__sale_price'),
+                F('product__inventory__base_price')
+            )))
+        )
+
+        total = agg['total_value'] or 0
+
+        currency_symbol = (FavoriteItem.objects
+                           .filter(collection=collection)
+                           .values_list('product__inventory__currency__symbol', flat=True)
+                           .first())
+
+        return self.return_success_response(
+            data={'total_value': total, 'currency_symbol': currency_symbol},
+            serializer_class=FavoriteTotalValueResponseSerializer,
             status_code=status.HTTP_200_OK
         )

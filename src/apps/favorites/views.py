@@ -1,8 +1,11 @@
+from decimal import Decimal
+
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
-from django.db.models import Prefetch, Count
+from django.db.models import Prefetch, Count, Sum, F
+from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404, redirect
 from django.views.generic import ListView, DetailView
 
@@ -126,6 +129,9 @@ class FavoriteCollectionDetailView(FavoriteItemsQuerysetMixin, DetailView):
         context['favorite_items'] = page_obj
         context['items_count'] = page_obj.paginator.count
 
+        context['favorites_total_value'] = self.get_favorites_total_value(favorite_items_qs)
+        context['favorites_currency_symbol'] = self.get_favorites_currency_symbol(favorite_items_qs)
+
         return context
 
     def get_paginated_items(self, queryset):
@@ -140,3 +146,20 @@ class FavoriteCollectionDetailView(FavoriteItemsQuerysetMixin, DetailView):
             page_obj = paginator.page(paginator.num_pages)
 
         return page_obj
+
+    def get_favorites_total_value(self, queryset):
+        agg = queryset.aggregate(
+            total_value=Sum(
+                Coalesce(
+                    F('product__inventory__sale_price'),
+                    F('product__inventory__base_price')
+                )
+            )
+        )
+        return agg['total_value'] or Decimal('0')
+
+    def get_favorites_currency_symbol(self, queryset):
+        symbol = queryset.values_list(
+            'product__inventory__currency__symbol', flat=True
+        ).first()
+        return symbol or ''

@@ -335,13 +335,14 @@ class LoadMoreFavorites extends BaseComponent {
     }
 
     updateStatus(node, isAvailable, isActive) {
-        const sbAvail = node.querySelector(this.selectors.statusAvailable);
-        const sbOos = node.querySelector(this.selectors.statusOutOfStock);
-        const sbUnav = node.querySelector(this.selectors.statusUnavailable);
-        if (sbAvail && sbOos && sbUnav) {
-            sbAvail.style.display = isAvailable ? '' : 'none';
-            sbOos.style.display = (!isAvailable && isActive) ? '' : 'none';
-            sbUnav.style.display = (!isAvailable && !isActive) ? '' : 'none';
+        const statusAvailable = node.querySelector(this.selectors.statusAvailable);
+        const statusOutOfStock = node.querySelector(this.selectors.statusOutOfStock);
+        const statusUnavailable = node.querySelector(this.selectors.statusUnavailable);
+
+        if (statusAvailable && statusOutOfStock && statusUnavailable) {
+            statusAvailable.style.display = isAvailable ? '' : 'none';
+            statusOutOfStock.style.display = (!isAvailable && isActive) ? '' : 'none';
+            statusUnavailable.style.display = (!isAvailable && !isActive) ? '' : 'none';
         }
     }
 

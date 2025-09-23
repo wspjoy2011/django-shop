@@ -10,13 +10,17 @@ class CollectionItemsCounter extends BaseComponent {
         this.selectors = {
             meta: '#collection-meta',
             grid: '#collection-items-grid',
-            statsNumber: '.collection-stats .stat-number',
+
+            itemsCount: '#stat-items-count',
+            totalValue: '#stat-total-value',
+            currencySymbol: '#stat-currency-symbol',
+
             templateScript: '#favorite-card-template',
             emptyState: '.collection-empty-state'
         };
 
         this.init();
-        void this.updateCountAndUI();
+        void this.updateAll();
     }
 
     bindEvents() {
@@ -25,30 +29,53 @@ class CollectionItemsCounter extends BaseComponent {
 
     setupBroadcastSubscriptions() {
         this.broadcastManager.subscribe('favorite_updated', () => {
-            void this.updateCountAndUI();
+            void this.updateAll();
         });
     }
 
-    async updateCountAndUI() {
+    async updateAll() {
         const meta = document.querySelector(this.selectors.meta);
         const grid = document.querySelector(this.selectors.grid);
-        const statsNumber = document.querySelector(this.selectors.statsNumber);
+        if (!meta || !grid) return;
 
         const collectionId = meta.dataset.collectionId;
-        const url = `/api/v1/favorites/collections/${collectionId}/count/`;
 
+        await this.fetchAndApplyJSON(
+            `/api/v1/favorites/collections/${collectionId}/count/`,
+            grid,
+            (data) => {
+                const count = Number.isFinite(data?.count) ? data.count : 0;
+                const countEl = document.querySelector(this.selectors.itemsCount);
+                if (countEl) countEl.textContent = String(count);
+                this.toggleEmptyState(count === 0);
+            },
+            () => this.handleLoginRedirect(meta)
+        );
+
+        await this.fetchAndApplyJSON(
+            `/api/v1/favorites/collections/${collectionId}/total-value/`,
+            grid,
+            (data) => {
+                const valEl = document.querySelector(this.selectors.totalValue);
+                const symEl = document.querySelector(this.selectors.currencySymbol);
+                if (valEl) valEl.textContent = (data?.total_value ?? 0);
+                if (symEl) symEl.textContent = (data?.currency_symbol ?? '');
+            },
+            () => this.handleLoginRedirect(meta)
+        );
+    }
+
+    async fetchAndApplyJSON(url, contextNode, onSuccess, onLoginRedirect) {
         try {
             const resp = await this.http.sendRequest(url, {
                 method: 'GET',
                 headers: {'Accept': 'application/json'}
             });
 
-            return await this.http.handleResponse(resp, grid, {
-                onLoginRedirect: () => this.handleLoginRedirect(meta),
+            return await this.http.handleResponse(resp, contextNode, {
+                onLoginRedirect,
                 onSuccess: (data) => {
-                    const count = Number.isFinite(data?.count) ? data.count : 0;
-                    if (statsNumber) statsNumber.textContent = String(count);
-                    this.toggleEmptyState(count === 0);
+                    if (typeof onSuccess === 'function') onSuccess(data);
                 },
                 onError: () => {
                 }
@@ -58,30 +85,17 @@ class CollectionItemsCounter extends BaseComponent {
     }
 
     toggleEmptyState(isEmpty) {
-        const grid = document.querySelector(this.selectors.grid);
+        const gridElement = document.querySelector(this.selectors.grid);
+        const emptyStateElement = document.querySelector(this.selectors.emptyState);
 
-        let emptyEl = document.querySelector(this.selectors.emptyState);
+        if (!gridElement || !emptyStateElement) return;
 
         if (isEmpty) {
-            if (!emptyEl) {
-                const tpl = document.querySelector(this.selectors.templateScript);
-                if (tpl && tpl.textContent) {
-                    const wrapper = document.createElement('div');
-                    wrapper.innerHTML = tpl.textContent;
-                    const candidate = wrapper.querySelector(this.selectors.emptyState);
-                    if (candidate) {
-                        emptyEl = candidate;
-                        emptyEl.style.display = '';
-                        grid.parentNode.insertBefore(emptyEl, grid.nextSibling);
-                    }
-                }
-            } else {
-                emptyEl.style.display = '';
-            }
-            if (grid) grid.style.display = 'none';
+            emptyStateElement.style.display = '';
+            gridElement.style.display = 'none';
         } else {
-            if (emptyEl) emptyEl.style.display = 'none';
-            if (grid) grid.style.display = '';
+            emptyStateElement.style.display = 'none';
+            gridElement.style.display = '';
         }
     }
 

@@ -68,4 +68,9 @@ urlpatterns = [
         views.FavoriteCollectionItemsCountAPIView.as_view(),
         name='favorite_collection_items_count',
     ),
+    path(
+        'favorites/collections/<int:collection_id>/total-value/',
+        views.FavoriteCollectionTotalValueAPIView.as_view(),
+        name='favorite_collection_total_value',
+    ),
 ]

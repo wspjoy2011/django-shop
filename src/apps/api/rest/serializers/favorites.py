@@ -185,3 +185,8 @@ class FavoriteItemsBulkDeleteRequestSerializer(serializers.Serializer):
 
 class FavoriteCountResponseSerializer(serializers.Serializer):
     count = serializers.IntegerField()
+
+
+class FavoriteTotalValueResponseSerializer(serializers.Serializer):
+    total_value = serializers.DecimalField(max_digits=14, decimal_places=2)
+    currency_symbol = serializers.CharField(allow_null=True, required=False)

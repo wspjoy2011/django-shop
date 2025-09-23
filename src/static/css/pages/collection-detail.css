@@ -23,12 +23,21 @@
     gap: 1.5rem;
 }
 
+.collection-stats {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+}
+
 .stat-item {
+    flex: 0 0 auto;
     text-align: center;
     padding: 1rem;
     background: rgba(255, 255, 255, .6);
     border-radius: 12px;
     border: 1px solid rgba(233, 30, 99, .15);
+    min-width: 100px;
 }
 
 .stat-number {
@@ -37,6 +46,7 @@
     font-weight: 700;
     color: #e91e63;
     line-height: 1;
+    white-space: nowrap;
 }
 
 .stat-label {

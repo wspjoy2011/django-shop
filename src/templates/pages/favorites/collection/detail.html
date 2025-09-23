@@ -62,11 +62,19 @@
         <div class="text-lg-end mt-3 mt-lg-0">
           <div class="collection-stats">
             <div class="stat-item">
-              <span class="stat-number">{{ items_count }}</span>
+              <span id="stat-items-count" class="stat-number">{{ items_count }}</span>
               <span class="stat-label">Items</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-number">
+                <span id="stat-total-value">{{ favorites_total_value }}</span>
+                <span id="stat-currency-symbol">{{ favorites_currency_symbol }}</span>
+              </span>
+              <span class="stat-label">Total Value</span>
             </div>
           </div>
         </div>
+
       </div>
     </div>
 
@@ -262,6 +270,9 @@
         </div>
       </div>
     {% endif %}
+
+    <!-- Hidden empty state for JS toggling -->
+    {% include 'components/favorites/favorite_item_empty_state.html' %}
 
     <!-- Delete Floating Toolbar -->
     <div class="admin-toolbar position-fixed" style="top: 20px; right: 20px; z-index: 1200; display: none;">
