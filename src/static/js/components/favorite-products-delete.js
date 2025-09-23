@@ -12,7 +12,9 @@ class FavoriteBulkDelete extends BaseComponent {
             grid: '#collection-items-grid',
             checkbox: '.favorite-delete-checkbox',
             toolbar: '.admin-toolbar',
-            button: '#bulk-delete-btn'
+            button: '#bulk-delete-btn',
+            selectAllBtn: '#select-all-btn',
+            clearAllBtn: '#clear-all-btn'
         };
 
         this.init();
@@ -29,6 +31,8 @@ class FavoriteBulkDelete extends BaseComponent {
     bindEvents() {
         const grid = document.querySelector(this.selectors.grid);
         const button = document.querySelector(this.selectors.button);
+        const selectAllBtn = document.querySelector(this.selectors.selectAllBtn);
+        const clearAllBtn = document.querySelector(this.selectors.clearAllBtn);
 
         if (!grid || !button) return;
 
@@ -42,6 +46,36 @@ class FavoriteBulkDelete extends BaseComponent {
             e.preventDefault();
             void this.handleBulkDelete();
         });
+
+        selectAllBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.selectAll();
+        });
+
+        clearAllBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.clearAll();
+        });
+    }
+
+    selectAll() {
+        const grid = document.querySelector(this.selectors.grid);
+        if (!grid) return;
+        const boxes = grid.querySelectorAll(this.selectors.checkbox);
+        boxes.forEach((el) => {
+            el.checked = true;
+        });
+        this.updateToolbarVisibility();
+    }
+
+    clearAll() {
+        const grid = document.querySelector(this.selectors.grid);
+        if (!grid) return;
+        const boxes = grid.querySelectorAll(this.selectors.checkbox);
+        boxes.forEach((el) => {
+            el.checked = false;
+        });
+        this.updateToolbarVisibility();
     }
 
     getSelectedIds() {
@@ -53,8 +87,18 @@ class FavoriteBulkDelete extends BaseComponent {
 
     updateToolbarVisibility() {
         const toolbar = document.querySelector(this.selectors.toolbar);
-        const count = this.getSelectedIds().length;
-        toolbar.style.display = count > 0 ? '' : 'none';
+        const grid = document.querySelector(this.selectors.grid);
+        if (!toolbar || !grid) return;
+
+        const boxes = grid.querySelectorAll(this.selectors.checkbox);
+        const selected = grid.querySelectorAll(`${this.selectors.checkbox}:checked`).length;
+
+        toolbar.style.display = boxes.length > 0 ? '' : 'none';
+
+        const deleteBtn = document.querySelector(this.selectors.button);
+        if (deleteBtn) {
+            deleteBtn.disabled = selected === 0;
+        }
     }
 
     async handleBulkDelete() {
