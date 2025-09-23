@@ -17,7 +17,8 @@ from .favorites import (
     ProductInFavoriteSerializer,
     FavoriteItemSerializer,
     FavoriteCollectionPrivacyToggleResponseSerializer,
-    FavoriteItemsBulkDeleteRequestSerializer
+    FavoriteItemsBulkDeleteRequestSerializer,
+    FavoriteCountResponseSerializer
 )
 
 from .common import (
@@ -46,6 +47,7 @@ __all__ = [
     'FavoriteItemSerializer',
     'FavoriteCollectionPrivacyToggleResponseSerializer',
     'FavoriteItemsBulkDeleteRequestSerializer',
+    'FavoriteCountResponseSerializer',
 
     # Common serializers
     'ErrorResponseSerializer',

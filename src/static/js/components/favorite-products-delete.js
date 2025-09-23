@@ -30,6 +30,8 @@ class FavoriteBulkDelete extends BaseComponent {
         const grid = document.querySelector(this.selectors.grid);
         const button = document.querySelector(this.selectors.button);
 
+        if (!grid || !button) return;
+
         grid.addEventListener('change', (e) => {
             if (e.target.matches(this.selectors.checkbox)) {
                 this.updateToolbarVisibility();
@@ -44,6 +46,7 @@ class FavoriteBulkDelete extends BaseComponent {
 
     getSelectedIds() {
         const grid = document.querySelector(this.selectors.grid);
+        if (!grid) return [];
         return Array.from(grid.querySelectorAll(`${this.selectors.checkbox}:checked`))
             .map((input) => parseInt(input.value, 10));
     }
@@ -75,7 +78,8 @@ class FavoriteBulkDelete extends BaseComponent {
                 onSuccess: () => {
                     MessageManager.showGlobalMessage(
                         `Deleted ${selected.length} items successfully!`,
-                        'success'
+                        'success',
+                        {timeout: 2000}
                     );
                     selected.forEach((id) => {
                         const node = grid.querySelector(`[data-item-id="${id}"]`);

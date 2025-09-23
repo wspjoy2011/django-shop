@@ -181,3 +181,7 @@ class FavoriteItemsBulkDeleteRequestSerializer(serializers.Serializer):
         if len(value) > 200:
             raise serializers.ValidationError('Too many items. Max 200 per request.')
         return list(set(value))
+
+
+class FavoriteCountResponseSerializer(serializers.Serializer):
+    count = serializers.IntegerField()

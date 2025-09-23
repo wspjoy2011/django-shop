@@ -13,6 +13,7 @@
 {% endblock %}
 
 {% block extra_js %}
+  <script type="module" src="{% static 'js/components/collection-items-counter.js' %}"></script>
   <script type="module" src="{% static 'js/components/collection-reorder.js' %}" defer></script>
   <script type="module" src="{% static 'js/components/load-more.js' %}" defer></script>
   <script type="module" src="{% static 'js/components/favorite-privacy-toggle.js' %}"></script>
@@ -244,19 +245,11 @@
             <span class="btn-text">Load More</span>
           </button>
         </div>
-        <script type="text/template" id="favorite-card-template">
-          {% include 'components/favorites/favorite_item_empty_template.html' %}
-        </script>
       {% endif %}
 
-      <!-- Pagination -->
-      {% if favorite_items.has_other_pages %}
-        <div class="row mt-5">
-          <div class="col-12">
-            {% include 'components/pagination.html' with items=favorite_items %}
-          </div>
-        </div>
-      {% endif %}
+      <script type="text/template" id="favorite-card-template">
+        {% include 'components/favorites/favorite_item_empty_template.html' %}
+      </script>
 
     {% else %}
       <div class="text-center text-muted py-5">
@@ -270,7 +263,7 @@
       </div>
     {% endif %}
 
-     <!-- Delete Floating Toolbar -->
+    <!-- Delete Floating Toolbar -->
     <div class="admin-toolbar position-fixed" style="top: 20px; right: 20px; z-index: 1200; display: none;">
       <div class="btn-group-vertical shadow">
         <button id="bulk-delete-btn" class="btn btn-danger" title="Delete selected items">

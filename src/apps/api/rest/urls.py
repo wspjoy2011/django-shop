@@ -63,4 +63,9 @@ urlpatterns = [
         views.FavoriteCollectionPrivacyToggleAPIView.as_view(),
         name='favorite_collection_privacy_toggle',
     ),
+    path(
+        'favorites/collections/<int:collection_id>/count/',
+        views.FavoriteCollectionItemsCountAPIView.as_view(),
+        name='favorite_collection_items_count',
+    ),
 ]

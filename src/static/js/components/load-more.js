@@ -39,15 +39,6 @@ class LoadMoreFavorites extends BaseComponent {
             noteText: '.favorite-note .note-text',
             templateScript: '#favorite-card-template',
 
-            pagination: {
-                nav: 'nav[aria-label="Page navigation"]',
-                first: '#pg-first',
-                prev: '#pg-prev',
-                next: '#pg-next',
-                last: '#pg-last',
-                current: '#pg-current'
-            },
-
             selectBlock: '.favorite-select',
             selectInput: '.favorite-delete-checkbox'
         };
@@ -82,12 +73,6 @@ class LoadMoreFavorites extends BaseComponent {
         });
     }
 
-    bootstrapInitialState() {
-        document.querySelectorAll(this.selectors.container).forEach((c) => {
-            if (!c.dataset.nextPage || c.dataset.nextPage === 'null') c.style.display = 'none';
-        });
-    }
-
     setLoadingState(container, isLoading) {
         LoadingStateManager.setLoadingState(container, isLoading, {
             selectors: {button: this.selectors.button, loadingSpinner: this.selectors.spinner},
@@ -110,74 +95,151 @@ class LoadMoreFavorites extends BaseComponent {
 
     async onLoadMore(container, grid) {
         const collectionId = container.dataset.collectionId;
-        const nextPage = container.dataset.nextPage;
-        if (!collectionId || !nextPage) {
+        if (!collectionId) {
             container.style.display = 'none';
             return;
         }
 
-        const loadedPage = parseInt(nextPage, 10);
-
         this.setLoadingState(container, true);
         try {
-            const url = `${this.baseUrl}/${collectionId}/items/?page=${encodeURIComponent(nextPage)}`;
-            const resp = await this.http.sendRequest(url, {
-                method: 'GET',
-                headers: {'Accept': 'application/json'}
-            });
+            let nextCursor = container.dataset.nextCursor || null;
 
-            if (resp.status === 404) {
-                this.handleLogoutDetection(container);
-                return;
+            if (!nextCursor) {
+                const ok = await this.bootstrapCursor(container, grid, collectionId);
+                if (!ok) return;
+                nextCursor = container.dataset.nextCursor || null;
+                if (!nextCursor) {
+                    container.style.display = 'none';
+                    return;
+                }
             }
 
-            await this.http.handleResponse(resp, container, {
-                onLoginRedirect: () => this.handleLogoutDetection(container),
-                onSuccess: (data) => this.handleSuccessPage(data, grid, container, loadedPage),
-                onError: () => {
-                    MessageManager.showGlobalMessage(
-                        'Failed to load more items. Please try again.',
-                        'error'
-                    );
-                }
-            });
-        } catch (err) {
+            const ok = await this.fetchByCursor(collectionId, nextCursor, container, grid);
+            if (!ok) {
+                return;
+            }
+        } catch (_) {
             MessageManager.showGlobalMessage('Network error. Please try again.', 'error');
         } finally {
             this.setLoadingState(container, false);
         }
     }
 
-    handleSuccessPage(data, grid, container, loadedPage) {
+    async bootstrapCursor(container, grid, collectionId) {
+        const url = `${this.baseUrl}/${collectionId}/items/`;
+        const resp = await this.http.sendRequest(url, {
+            method: 'GET',
+            headers: {'Accept': 'application/json'}
+        });
+
+        if (resp.status === 404) {
+            this.handleLogoutDetection(container);
+            return false;
+        }
+
+        let ok = true;
+        await this.http.handleResponse(resp, container, {
+            onLoginRedirect: () => {
+                this.handleLogoutDetection(container);
+                ok = false;
+            },
+            onSuccess: (data) => {
+                const nextCursor = this.extractCursor(data?.next);
+                if (nextCursor) {
+                    container.dataset.nextCursor = nextCursor;
+                }
+
+                const appended = this.appendResultsFilteringExisting(data, grid, container);
+                if (appended === 0 && nextCursor) {
+                }
+            },
+            onError: () => {
+                ok = false;
+            }
+        });
+
+        return ok;
+    }
+
+    async fetchByCursor(collectionId, cursor, container, grid) {
+        const url = `${this.baseUrl}/${collectionId}/items/?cursor=${encodeURIComponent(cursor)}`;
+        const resp = await this.http.sendRequest(url, {
+            method: 'GET',
+            headers: {'Accept': 'application/json'}
+        });
+
+        if (resp.status === 404) {
+            this.handleLogoutDetection(container);
+            return false;
+        }
+
+        let ok = true;
+        await this.http.handleResponse(resp, container, {
+            onLoginRedirect: () => {
+                this.handleLogoutDetection(container);
+                ok = false;
+            },
+            onSuccess: (data) => {
+                this.handleSuccessPageCursor(data, grid, container);
+            },
+            onError: () => {
+                ok = false;
+                MessageManager.showGlobalMessage('Failed to load more items. Please try again.', 'error');
+            }
+        });
+
+        return ok;
+    }
+
+    extractCursor(nextUrl) {
+        if (!nextUrl) return null;
+        try {
+            const u = new URL(nextUrl, window.location.origin);
+            return u.searchParams.get('cursor');
+        } catch {
+            return null;
+        }
+    }
+
+    getRenderedIds(grid) {
+        return new Set(
+            Array.from(grid.querySelectorAll(this.selectors.cardItem))
+                .map((el) => parseInt(el.getAttribute('data-item-id') || '0', 10))
+                .filter((n) => Number.isFinite(n) && n > 0)
+        );
+    }
+
+    appendResultsFilteringExisting(data, grid, container) {
+        if (!data || !Array.isArray(data.results)) return 0;
+
+        const rendered = this.getRenderedIds(grid);
+        const fragment = document.createDocumentFragment();
+        let appended = 0;
+
+        for (const favoriteItem of data.results) {
+            const id = parseInt(favoriteItem?.id, 10);
+            if (!Number.isFinite(id) || rendered.has(id)) continue;
+            const node = this.buildNodeFromTemplate(favoriteItem, container);
+            if (node) {
+                fragment.appendChild(node);
+                appended += 1;
+            }
+        }
+        if (appended > 0) grid.appendChild(fragment);
+        return appended;
+    }
+
+    handleSuccessPageCursor(data, grid, container) {
         if (!data || !Array.isArray(data.results)) {
             MessageManager.showGlobalMessage('Unexpected server response.', 'error');
             return;
         }
 
-        const fragment = document.createDocumentFragment();
-        for (const favoriteItem of data.results) {
-            const node = this.buildNodeFromTemplate(favoriteItem, container);
-            if (node) fragment.appendChild(node);
-        }
-        if (fragment.children.length) {
-            grid.appendChild(fragment);
-        }
+        this.appendResultsFilteringExisting(data, grid, container);
 
-        const currentPage = Number.isFinite(loadedPage) ? loadedPage : null;
-        const hasNext = Boolean(data.next);
-
-        this.updatePaginationUI(currentPage, hasNext);
-
-        if (!hasNext) {
-            container.style.display = 'none';
-            return;
-        }
-
-        const nextPage = new URL(data.next, window.location.origin)
-            .searchParams.get('page');
-
-        if (nextPage) {
-            container.dataset.nextPage = String(nextPage);
+        const nextCursor = this.extractCursor(data.next);
+        if (nextCursor) {
+            container.dataset.nextCursor = nextCursor;
         } else {
             container.style.display = 'none';
         }

@@ -1,5 +1,6 @@
 from django.db.models import Q
 from rest_framework.generics import get_object_or_404, ListAPIView
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 
@@ -11,7 +12,7 @@ from apps.favorites.models import FavoriteCollection, FavoriteItem
 
 from .base import BaseAPIView
 from ..mixins import FavoriteCollectionPermissionMixin
-from ..paginators import FavoriteItemsPagination
+from ..paginators import FavoriteItemsCursorPagination
 from ..permissions import IsOwnerOrPublicReadOnly, IsCollectionOwnerPermission
 from ..serializers import (
     FavoriteToggleResponseSerializer,
@@ -21,7 +22,8 @@ from ..serializers import (
     MessageResponseSerializer,
     UserFavoritesCountResponseSerializer,
     FavoriteCollectionReorderRequestSerializer,
-    FavoriteItemSerializer, FavoriteCollectionPrivacyToggleResponseSerializer, FavoriteItemsBulkDeleteRequestSerializer
+    FavoriteItemSerializer, FavoriteCollectionPrivacyToggleResponseSerializer, FavoriteItemsBulkDeleteRequestSerializer,
+    FavoriteCountResponseSerializer
 )
 from ..choices import FavoriteActionChoices
 
@@ -280,7 +282,7 @@ class FavoriteCollectionReorderAPIView(FavoriteCollectionPermissionMixin, BaseAP
 
 class FavoriteItemsListAPIView(FavoriteItemsQuerysetMixin, ListAPIView):
     serializer_class = FavoriteItemSerializer
-    pagination_class = FavoriteItemsPagination
+    pagination_class = FavoriteItemsCursorPagination
     permission_classes = [IsOwnerOrPublicReadOnly]
 
     def get_object(self):
@@ -347,3 +349,21 @@ class FavoriteItemsBulkDeleteAPIView(FavoriteCollectionPermissionMixin, BaseAPIV
             )
 
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class FavoriteCollectionItemsCountAPIView(FavoriteCollectionPermissionMixin, BaseAPIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, collection_id: int):
+        collection = get_object_or_404(FavoriteCollection, id=collection_id)
+
+        if not collection.is_public:
+            self.check_owner_permission(request, collection)
+
+        count = FavoriteItem.objects.filter(collection=collection).count()
+
+        return self.return_success_response(
+            data={'count': count},
+            serializer_class=FavoriteCountResponseSerializer,
+            status_code=status.HTTP_200_OK
+        )
