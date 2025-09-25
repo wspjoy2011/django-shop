@@ -53,6 +53,14 @@ class Cart(models.Model):
         help_text="Anonymous cart token. Mutually exclusive with `user`."
     )
 
+    products = models.ManyToManyField(
+        'catalog.Product',
+        through='CartItem',
+        related_name='carts',
+        blank=True,
+        help_text="Products in this cart via CartItem"
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

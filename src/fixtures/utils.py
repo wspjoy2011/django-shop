@@ -22,23 +22,32 @@ def copy_insert_data(model: type[models.Model], columns: List[str], data: List[t
     table_name = model._meta.db_table
     temp_table_name = f"temp_copy_{table_name}"
 
-    column_defs = []
-    for col_name in columns:
-        field = model._meta.get_field(col_name)
-        pg_type = get_postgres_type(field)
-        column_defs.append(f'"{col_name}" {pg_type}')
+    quote_name = connection.ops.quote_name
+
+    fields = [model._meta.get_field(field_name) for field_name in columns]
+
+    column_definitions = []
+    for field in fields:
+        postgres_type = get_postgres_type(field)
+        column_definitions.append(f"{quote_name(field.column)} {postgres_type}")
+
+    quoted_table_name = quote_name(table_name)
+    quoted_temp_table_name = quote_name(temp_table_name)
+    quoted_column_list = ", ".join(quote_name(field.column) for field in fields)
 
     with transaction.atomic(), connection.cursor() as cursor:
-        cursor.execute(f"CREATE TEMP TABLE {temp_table_name} ({', '.join(column_defs)}) ON COMMIT DROP;")
+        cursor.execute(
+            f"CREATE TEMP TABLE {quoted_temp_table_name} ({', '.join(column_definitions)}) ON COMMIT DROP;"
+        )
 
-        sql_copy = f"COPY {temp_table_name} ({', '.join(columns)}) FROM STDIN"
-        with cursor.copy(sql_copy) as copy:
+        sql_copy = f"COPY {quoted_temp_table_name} ({quoted_column_list}) FROM STDIN"
+        with cursor.copy(sql_copy) as copy_context:
             for row in data:
-                copy.write_row(row)
+                copy_context.write_row(row)
 
         cursor.execute(f"""
-            INSERT INTO {table_name} ({', '.join(columns)})
-            SELECT {', '.join(columns)} FROM {temp_table_name};
+            INSERT INTO {quoted_table_name} ({quoted_column_list})
+            SELECT {quoted_column_list} FROM {quoted_temp_table_name};
         """)
 
 
