@@ -1,0 +1,32 @@
+<div class="cart-component {{ size_class }}{% if in_cart %} cart-active{% endif %}"
+     data-cart-url="{{ cart_toggle_url }}"
+     data-authenticated="{% if is_authenticated %}true{% else %}false{% endif %}"
+     data-in-cart="{% if in_cart %}true{% else %}false{% endif %}"
+     data-product-id="{{ product.pk }}">
+
+  <div class="cart-container d-inline-flex align-items-center gap-2"
+       title="{% if not is_authenticated %}Login to add to cart{% elif in_cart %}Remove from cart{% else %}Add to cart{% endif %}">
+
+    <button type="button" class="btn cart-btn"
+            title="{% if in_cart %}Remove from cart{% else %}Add to cart{% endif %}">
+      <div class="cart-badge">
+        <div class="cart-body">
+          {% if in_cart %}
+            <i class="fas fa-check cart-check"></i>
+          {% else %}
+            <i class="fas fa-shopping-cart cart-icon"></i>
+          {% endif %}
+        </div>
+      </div>
+    </button>
+
+    {% if show_count %}
+      <div class="cart-count-container">
+        <span class="cart-count">{{ carts_users_count }}</span>
+        <small class="cart-label">in carts</small>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="cart-messages-container position-absolute" style="z-index: 9999;"></div>
+</div>

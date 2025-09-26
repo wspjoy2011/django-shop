@@ -5,6 +5,7 @@ from django_extensions.db.fields import AutoSlugField
 
 from apps.favorites.models import FavoriteItem, FavoriteCollection
 from .choices import SeasonChoices, GenderChoices
+from ..cart.models import CartItem
 
 User = get_user_model()
 
@@ -296,3 +297,25 @@ class Product(models.Model):
             return len(self.favorites_list)
 
         return FavoriteItem.objects.filter(product=self).count()
+
+    def get_in_carts_users_count(self):
+        if hasattr(self, 'cart_items_list'):
+            user_ids = {item.cart.user_id for item in self.cart_items_list}
+            return len(user_ids)
+        return (
+            CartItem.objects
+            .filter(product=self)
+            .values_list('cart__user_id', flat=True)
+            .distinct()
+            .count()
+        )
+
+    def is_in_cart_of(self, user):
+        if not user or not user.is_authenticated:
+            return False
+
+        if hasattr(self, 'cart_items_list'):
+            return any(item.cart.user_id == user.id for item in self.cart_items_list)
+
+        from apps.cart.models import CartItem
+        return CartItem.objects.filter(product=self, cart__user=user).exists()

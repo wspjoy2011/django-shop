@@ -1,0 +1,133 @@
+.cart-component {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.cart-container {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.cart-btn {
+    border: none;
+    background: transparent;
+    padding: 0;
+    cursor: pointer;
+    transition: all .3s cubic-bezier(.4, 0, .2, 1);
+}
+
+.cart-btn:hover {
+    transform: translateY(-2px);
+}
+
+.cart-btn:active {
+    transform: translateY(0) scale(.95);
+}
+
+.cart-btn:disabled {
+    opacity: .6;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+.cart-badge {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #26a69a 0%, #2bbbad 100%);
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(38, 166, 154, .3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all .3s ease;
+}
+
+.cart-body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+}
+
+.cart-icon, .cart-check {
+    color: #fff;
+    font-size: 1.1rem;
+    transition: all .3s ease;
+}
+
+/* Active state */
+.cart-active .cart-badge {
+    background: linear-gradient(135deg, #a3e635 0%, #65a30d 100%);
+    box-shadow: 0 6px 20px rgba(163, 230, 53, .35);
+    animation: cartPulse .6s ease-out;
+}
+
+.cart-active .cart-icon {
+    opacity: 0;
+}
+
+.cart-active .cart-check {
+    color: #1f2937;
+}
+
+.cart-count-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.cart-count {
+    font-size: 0.95rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #34d399, #10b981);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+    margin-bottom: 2px;
+}
+
+.cart-label {
+    font-size: .6rem;
+    color: #636e72;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+}
+
+/* Sizes */
+.cart-small .cart-badge {
+    width: 32px;
+    height: 32px;
+}
+
+.cart-small .cart-icon, .cart-small .cart-check {
+    font-size: .95rem;
+}
+
+.cart-large .cart-badge {
+    width: 48px;
+    height: 48px;
+}
+
+.cart-large .cart-icon, .cart-large .cart-check {
+    font-size: 1.3rem;
+}
+
+/* Motion */
+@keyframes cartPulse {
+    0% {
+        transform: scale(1)
+    }
+    50% {
+        transform: scale(1.08)
+    }
+    100% {
+        transform: scale(1)
+    }
+}

@@ -3,6 +3,7 @@
 {% load rating_tags %}
 {% load product_price %}
 {% load favorite_tags %}
+{% load cart_tags %}
 
 {% block title %}Catalog — Products{% endblock %}
 
@@ -14,6 +15,7 @@
   <link rel="stylesheet" href="{% static 'css/components/ratings.css' %}">
   <link rel="stylesheet" href="{% static 'css/components/product-price.css' %}">
   <link rel="stylesheet" href="{% static 'css/components/favorite-button.css' %}">
+  <link rel="stylesheet" href="{% static 'css/components/cart-button.css' %}">
 {% endblock %}
 
 {% block extra_js %}
@@ -166,9 +168,14 @@
                 </div>
               </div>
 
-              <!-- Favorites -->
-              <div class="d-flex justify-content-end mb-2 me-5">
-                {% favorite_button product size='small' show_count=True %}
+              <!-- Favorites and Cart -->
+              <div class="d-flex justify-content-between mb-2 mx-5">
+                <div class="d-flex justify-content-start">
+                  {% cart_button product size='small' show_count=True %}
+                </div>
+                <div class="d-flex justify-content-end">
+                  {% favorite_button product size='small' show_count=True %}
+                </div>
               </div>
 
               <!-- Rating and Likes/Dislikes -->

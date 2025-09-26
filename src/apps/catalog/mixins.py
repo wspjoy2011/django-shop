@@ -9,6 +9,7 @@ from django.shortcuts import redirect
 from django.utils.http import urlencode
 from django.views import View
 
+from apps.cart.models import CartItem
 from apps.catalog.models import Season
 from apps.catalog.pgviews import PriceRangesMV, GenderFilterOptionsMV
 from apps.favorites.models import FavoriteItem
@@ -53,6 +54,13 @@ class ProductQuerysetMixin:
                     'product_id', 'collection__user_id'
                 ),
                 to_attr='favorites_list'
+            ),
+            Prefetch(
+                'cart_items',
+                queryset=CartItem.objects.select_related('cart').only(
+                    'product_id', 'cart_id', 'cart__user_id'
+                ),
+                to_attr='cart_items_list'
             )
         ]
 
