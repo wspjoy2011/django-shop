@@ -2,7 +2,8 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import F
+from django.db.models import F, Sum
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 
 User = get_user_model()
@@ -106,6 +107,19 @@ class Cart(models.Model):
     @property
     def total_quantity(self) -> int:
         return sum(i.quantity for i in self.items.all())
+
+    @property
+    def total_value(self):
+        return (
+                self.items
+                .annotate(
+                    effective_price=Coalesce(F("product__inventory__sale_price"),
+                                             F("product__inventory__base_price"))
+                )
+                .aggregate(
+                    total=Sum(F("effective_price") * F("quantity"))
+                )["total"] or 0
+        )
 
     def has_product(self, product) -> bool:
         return self.items.filter(product=product).exists()

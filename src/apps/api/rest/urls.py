@@ -11,6 +11,11 @@ urlpatterns = [
         views.CartToggleAPIView.as_view(),
         name='product_cart_toggle'
     ),
+    path(
+        "cart/summary/",
+        views.CartSummaryAPIView.as_view(),
+        name="cart_summary"
+    ),
 
     # Rating System APIs
     path(
