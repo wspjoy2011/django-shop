@@ -122,6 +122,8 @@ TEMPLATES = [
                 # Count user favorites products
                 'apps.favorites.context_processors.favorites_context',
 
+                # Cart summary
+                "apps.cart.context_processors.cart_summary",
             ],
         },
     },
