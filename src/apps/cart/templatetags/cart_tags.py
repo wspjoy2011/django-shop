@@ -1,4 +1,5 @@
 from django import template
+from django.urls import reverse
 
 register = template.Library()
 
@@ -10,7 +11,7 @@ def cart_button(context, product, size='normal', show_count=True):
     in_cart = product.is_in_cart(cart)
     carts_users_count = product.get_in_carts_users_count()
 
-    cart_toggle_url = "#"
+    cart_toggle_url = reverse('api:product_cart_toggle', args=[product.pk])
 
     size_classes = {
         'small': 'cart-small',
