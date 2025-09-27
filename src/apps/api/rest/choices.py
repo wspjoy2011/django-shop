@@ -30,3 +30,10 @@ class FavoriteActionChoices:
 
     TOGGLE_CHOICES = [ADDED, REMOVED]
     COLLECTION_CHOICES = [CREATED, SET_DEFAULT]
+
+
+class CartActionChoices:
+    ADDED = 'added'
+    REMOVED = 'removed'
+
+    ALL_CHOICES = [ADDED, REMOVED]

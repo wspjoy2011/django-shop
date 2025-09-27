@@ -1,6 +1,5 @@
 <div class="cart-component {{ size_class }}{% if in_cart %} cart-active{% endif %}"
      data-cart-url="{{ cart_toggle_url }}"
-     data-authenticated="{% if is_authenticated %}true{% else %}false{% endif %}"
      data-in-cart="{% if in_cart %}true{% else %}false{% endif %}"
      data-product-id="{{ product.pk }}">
 

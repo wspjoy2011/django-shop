@@ -107,6 +107,9 @@ class Cart(models.Model):
     def total_quantity(self) -> int:
         return sum(i.quantity for i in self.items.all())
 
+    def has_product(self, product) -> bool:
+        return self.items.filter(product=product).exists()
+
     def add_product(self, product, quantity: int = 1):
         if quantity <= 0:
             raise ValidationError("Quantity must be positive.")
@@ -173,6 +176,15 @@ class Cart(models.Model):
         other.clear()
         return self
 
+    @staticmethod
+    def users_with_product_count(product) -> int:
+        return (
+            CartItem.objects
+            .filter(product=product)
+            .values("cart_id")
+            .distinct()
+            .count()
+        )
 
 class CartItem(models.Model):
     cart = models.ForeignKey(

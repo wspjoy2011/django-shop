@@ -22,6 +22,8 @@ from .favorites import (
     FavoriteTotalValueResponseSerializer
 )
 
+from .cart import CartToggleResponseSerializer
+
 from .common import (
     ErrorResponseSerializer,
     ValidationErrorResponseSerializer,
@@ -29,6 +31,9 @@ from .common import (
 )
 
 __all__ = [
+    # Cart serializers
+    'CartToggleResponseSerializer',
+
     # Rating serializers
     'RatingCreateUpdateRequestSerializer',
     'LikeToggleResponseSerializer',

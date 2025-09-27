@@ -310,12 +310,11 @@ class Product(models.Model):
             .count()
         )
 
-    def is_in_cart_of(self, user):
-        if not user or not user.is_authenticated:
+    def is_in_cart(self, cart) -> bool:
+        if not cart:
             return False
 
         if hasattr(self, 'cart_items_list'):
-            return any(item.cart.user_id == user.id for item in self.cart_items_list)
+            return any(item.cart_id == cart.id for item in self.cart_items_list)
 
-        from apps.cart.models import CartItem
-        return CartItem.objects.filter(product=self, cart__user=user).exists()
+        return CartItem.objects.filter(product=self, cart=cart).exists()

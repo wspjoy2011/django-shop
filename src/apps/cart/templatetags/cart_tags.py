@@ -5,9 +5,9 @@ register = template.Library()
 @register.inclusion_tag('components/cart_button.html', takes_context=True)
 def cart_button(context, product, size='normal', show_count=True):
     request = context['request']
-    user = request.user
+    cart = request.cart
 
-    in_cart = product.is_in_cart_of(user) if user.is_authenticated else False
+    in_cart = product.is_in_cart(cart)
     carts_users_count = product.get_in_carts_users_count()
 
     cart_toggle_url = "#"
@@ -24,6 +24,5 @@ def cart_button(context, product, size='normal', show_count=True):
         'carts_users_count': carts_users_count,
         'show_count': show_count,
         'size_class': size_classes.get(size, 'cart-normal'),
-        'is_authenticated': user.is_authenticated,
         'cart_toggle_url': cart_toggle_url,
     }

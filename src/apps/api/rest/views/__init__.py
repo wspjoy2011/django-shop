@@ -19,7 +19,12 @@ from .favorites import (
     FavoriteCollectionTotalValueAPIView
 )
 
+from .cart import CartToggleAPIView
+
 __all__ = [
+    # Cart views
+    'CartToggleAPIView',
+
     # Rating views
     'LikeToggleAPIView',
     'DislikeToggleAPIView',

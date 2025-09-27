@@ -5,6 +5,13 @@ from . import views
 app_name = 'api'
 
 urlpatterns = [
+    # Cart System APIs
+    path(
+        'products/<int:product_id>/cart/',
+        views.CartToggleAPIView.as_view(),
+        name='product_cart_toggle'
+    ),
+
     # Rating System APIs
     path(
         'products/<int:product_id>/like/',

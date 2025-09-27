@@ -97,6 +97,10 @@ MIDDLEWARE = [
 
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+
+    # Cart
+    'apps.cart.middleware.CartMiddleware',
+
 ]
 
 ROOT_URLCONF = 'core.urls'
@@ -237,3 +241,11 @@ REST_FRAMEWORK = {
 # Cart token
 
 CART_TOKEN_LIFETIME = timedelta(days=90)
+
+# Cart token cookie
+
+CART_COOKIE_NAME = "cart_token"
+CART_COOKIE_AGE = int(CART_TOKEN_LIFETIME.total_seconds())
+CART_COOKIE_SECURE = True
+CART_COOKIE_HTTPONLY = True
+CART_COOKIE_SAMESITE = "Lax"
