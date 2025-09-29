@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
@@ -96,12 +98,71 @@ class Cart(models.Model):
         if (self.user and self.token) or (not self.user and not self.token):
             raise ValidationError("Exactly one of `user` or `token` must be set.")
 
+    def _get_available_items_list(self):
+        items = getattr(self, "available_items_list", None)
+        if items is None:
+            raise RuntimeError(
+                "Cart.available_items_list is missing. "
+                "Make sure your view prefetches it via Prefetch(..., to_attr='available_items_list')."
+            )
+        return items
+
+    @property
+    def items_available_count(self) -> int:
+        return len(self._get_available_items_list())
+
+    @property
+    def total_quantity_available(self) -> int:
+        return sum(item.quantity for item in self._get_available_items_list())
+
+    def subtotal_amount(self) -> Decimal:
+        total = Decimal("0.00")
+        for item in self._get_available_items_list():
+            inv = item.product.inventory
+            total += inv.base_price * item.quantity
+        return total
+
+    def discount_amount(self) -> Decimal:
+        total = Decimal("0.00")
+        for item in self._get_available_items_list():
+            inv = item.product.inventory
+            if inv.sale_price is not None and inv.sale_price < inv.base_price:
+                total += (inv.base_price - inv.sale_price) * item.quantity
+        return total
+
+    def total_amount(self) -> Decimal:
+        return self.subtotal_amount() - self.discount_amount()
+
+    def subtotal_formatted(self) -> str:
+        items = self._get_available_items_list()
+        if not items:
+            return "0.00"
+        currency = items[0].product.inventory.currency
+        return currency.format_amount(self.subtotal_amount())
+
+    def discount_formatted(self) -> str:
+        items = self._get_available_items_list()
+        if not items:
+            return "0.00"
+        currency = items[0].product.inventory.currency
+        return currency.format_amount(self.discount_amount())
+
+    def total_formatted(self) -> str:
+        items = self._get_available_items_list()
+        if not items:
+            return "0.00"
+        currency = items[0].product.inventory.currency
+        return currency.format_amount(self.total_amount())
+
     @property
     def is_anonymous(self) -> bool:
         return self.user_id is None and self.token_id is not None
 
     @property
     def items_count(self) -> int:
+        items = getattr(self, "items_list", None)
+        if items is not None:
+            return len(items)
         return self.items.count()
 
     @property
@@ -225,3 +286,13 @@ class CartItem(models.Model):
 
     def __str__(self) -> str:
         return f"{self.cart_id} | {self.product_id} x {self.quantity}"
+
+    @property
+    def line_total(self):
+        inv = self.product.inventory
+        return inv.current_price * self.quantity
+
+    @property
+    def format_line_total(self):
+        inv = self.product.inventory
+        return inv.currency.format_amount(self.line_total)

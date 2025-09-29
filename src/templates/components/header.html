@@ -98,7 +98,7 @@
 
       <!-- Cart icon  -->
       <div class="me-3">
-        <a href="#"
+        <a href="{% url 'cart:cart_detail' %}"
            class="text-decoration-none position-relative cart-icon-container"
            data-tooltip="Cart
             • Items: {{ cart_summary.items_count }}

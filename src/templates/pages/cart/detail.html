@@ -1,0 +1,189 @@
+{% extends 'layout/base.html' %}
+{% load static %}
+
+{% block title %}Your Cart{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/pages/cart-detail.css' %}">
+{% endblock %}
+
+{% block content %}
+  <div class="mb-5">
+    <section class="cart-hero my-4 p-4 p-lg-5">
+      <div class="d-lg-flex align-items-center justify-content-between gap-3">
+        <div>
+          <h1 class="h2 fw-bold mb-2">
+            <i class="fas fa-cart-shopping text-primary me-2"></i> Your Cart
+          </h1>
+          <p class="text-muted mb-0">
+            Review items, adjust quantities, and proceed when ready.
+          </p>
+        </div>
+        {% if user_cart.items_count %}
+          <button class="cart-clear-btn">
+            <i class="fas fa-trash-can"></i>
+            <span>Clear cart</span>
+          </button>
+        {% endif %}
+      </div>
+    </section>
+
+    {% if user_cart.items.exists %}
+      <div class="row g-4 cart-layout">
+        <!-- Left: items list -->
+        <div class="col-12 col-lg-8">
+          <div class="cart-items">
+            {% for item in user_cart.items_list %}
+              {% with product=item.product %}
+                <article class="cart-item-card position-relative">
+                  <!-- Image -->
+                  <div class="cart-item-media">
+                    {% if product.image_url %}
+                      <a href="{{ product.get_absolute_url }}" class="cart-item-image-link"
+                         aria-label="{{ product.product_display_name }}">
+                        <img src="{{ product.image_url }}" alt="{{ product.product_display_name }}">
+                      </a>
+                    {% else %}
+                      <div class="cart-item-noimage">No image</div>
+                    {% endif %}
+                  </div>
+
+                  <!-- Body -->
+                  <div class="cart-item-body">
+                    <!-- Title and meta -->
+                    <div class="d-flex align-items-start justify-content-between gap-3">
+                      <div>
+                        <h3 class="cart-item-title mb-1">
+                          <a href="{{ product.get_absolute_url }}"
+                             class="text-decoration-none">{{ product.product_display_name }}</a>
+                        </h3>
+                        <div class="cart-item-meta text-muted">
+                          ID: {{ product.product_id }}{% if product.year %} • {{ product.year }}{% endif %}
+                        </div>
+                      </div>
+
+                      <!-- Remove button -->
+                      <button class="btn btn-link text-danger p-0" aria-label="Remove item">
+                        <i class="fas fa-times"></i>
+                      </button>
+                    </div>
+
+                    <div class="soft-sep"></div>
+
+                    <!-- Price row -->
+                    {% with inventory=product.get_inventory %}
+                      {% if inventory.is_on_sale %}
+                        <div class="cart-item-price">
+                          <span class="current-price">{{ inventory.format_sale_price }}</span>
+                          <span class="old-price">{{ inventory.format_base_price }}</span>
+                          <span class="badge badge-saving">−{{ inventory.discount_percentage }}%</span>
+                        </div>
+                      {% else %}
+                        <div class="cart-item-price">
+                          <span class="current-price">{{ inventory.format_base_price }}</span>
+                        </div>
+                      {% endif %}
+
+                      <!-- Quantity controls and line total -->
+                      <div class="cart-item-controls d-flex align-items-center justify-content-between">
+                      <div class="qty-stepper">
+                        <!-- Decrement -->
+                        <button class="stepper-btn" aria-label="Decrease quantity">
+                          <i class="fas fa-minus"></i>
+                        </button>
+
+                        <div class="qty-value" aria-live="polite">{{ item.quantity }}</div>
+
+                        <!-- Increment -->
+                        <button class="stepper-btn" aria-label="Increase quantity">
+                          <i class="fas fa-plus"></i>
+                        </button>
+                      </div>
+
+                      <!-- Per-item total using effective price -->
+                      <div class="line-total">
+                        <span class="label">Line total</span>
+                        <span class="value">
+                          {{ inventory.format_current_price }} × {{ item.quantity }} = {{ item.format_line_total }}
+                        </span>
+                      </div>
+                    {% endwith %}
+
+                    </div>
+                  </div>
+
+                  <!-- Unavailable overlay & strike-through -->
+                  {% with stock=product.get_stock_status %}
+                    {% if not stock.is_active or not stock.in_stock %}
+                      <div class="cart-item-overlay" title="Unavailable" aria-hidden="true"></div>
+                      <div class="cart-item-strike" aria-hidden="true"></div>
+                      <div class="cart-item-overlay-badge">
+                        {% if not stock.is_active %}
+                          Not active
+                        {% else %}
+                          Out of stock
+                        {% endif %}
+                      </div>
+                    {% endif %}
+                  {% endwith %}
+
+                </article>
+              {% endwith %}
+            {% endfor %}
+
+          </div>
+        </div>
+
+        <!-- Right: summary -->
+        <div class="col-12 col-lg-4">
+          <aside class="cart-summary">
+            <h2 class="h5 fw-bold mb-3"><i class="fas fa-receipt me-2"></i> Order Summary</h2>
+
+            <ul class="summary-list">
+              <li>
+                <span>Items</span>
+                <span>{{ user_cart.total_quantity_available }}</span>
+              </li>
+
+              <li>
+                <span>Subtotal</span>
+                <span>{{ user_cart.subtotal_formatted }}</span>
+              </li>
+
+              <li class="saving">
+                <span>Discount</span>
+                <span>{{ user_cart.discount_formatted }}</span>
+              </li>
+
+              <li class="total">
+                <span>Total</span>
+                <span>{{ user_cart.total_formatted }}</span>
+              </li>
+
+            </ul>
+
+            <button class="btn btn-primary w-100 rounded-pill mt-2" disabled>
+              Continue to checkout
+            </button>
+
+            <p class="text-muted small mt-2 mb-0">
+              Taxes and shipping will be calculated at checkout.
+            </p>
+          </aside>
+        </div>
+
+      </div>
+    {% else %}
+      <!-- Empty state -->
+      <div class="text-center text-muted py-5">
+        <div class="empty-state">
+          <div class="empty-icon">
+            <i class="fas fa-cart-shopping-slash fa-2x mb-3"></i>
+          </div>
+          <h3>Your cart is empty</h3>
+          <p class="mb-0">Add some products to see them here.</p>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}
