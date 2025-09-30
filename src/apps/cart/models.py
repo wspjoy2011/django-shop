@@ -3,10 +3,13 @@ from decimal import Decimal
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import models, transaction
 from django.db.models import F, Sum
 from django.db.models.functions import Coalesce
 from django.utils import timezone
+
+from apps.cart.exceptions import NotEnoughStockError, ProductUnavailableError, CartItemNotFoundError
+from apps.inventories.models import ProductInventory
 
 User = get_user_model()
 
@@ -187,21 +190,71 @@ class Cart(models.Model):
 
     def add_product(self, product, quantity: int = 1):
         if quantity <= 0:
-            raise ValidationError("Quantity must be positive.")
+            raise ValidationError("Step must be positive.")
 
-        item, created = CartItem.objects.get_or_create(
-            cart=self,
-            product=product,
-            defaults={'quantity': quantity},
-        )
-        if not created:
-            CartItem.objects.filter(pk=item.pk).update(quantity=F('quantity') + quantity, updated_at=timezone.now())
-            item.refresh_from_db(fields=['quantity', 'updated_at'])
-        else:
-            item.save()
+        with transaction.atomic():
+            inventory = (
+                ProductInventory.objects
+                .select_for_update()
+                .only("id", "is_active", "stock_quantity", "reserved_quantity")
+                .get(product_id=product.pk)
+            )
 
-        self.save(update_fields=['updated_at'])
+            if not inventory.is_active or not inventory.is_in_stock:
+                raise ProductUnavailableError()
+
+            existing_item = (
+                CartItem.objects
+                .filter(cart=self, product=product)
+                .only("id", "quantity")
+                .first()
+            )
+            current_quantity = existing_item.quantity if existing_item else 0
+            new_quantity = current_quantity + quantity
+
+            if new_quantity > inventory.available_quantity:
+                raise NotEnoughStockError()
+
+            if existing_item:
+                CartItem.objects.filter(pk=existing_item.pk).update(
+                    quantity=F("quantity") + quantity,
+                    updated_at=timezone.now(),
+                )
+                existing_item.refresh_from_db(fields=["quantity", "updated_at"])
+                self.save(update_fields=["updated_at"])
+                return existing_item
+
+            item = CartItem.objects.create(cart=self, product=product, quantity=quantity)
+            self.save(update_fields=["updated_at"])
         return item
+
+    def decrease_product(self, product, step: int = 1):
+        if step <= 0:
+            raise ValidationError("Step must be positive.")
+
+        with transaction.atomic():
+            item = (
+                CartItem.objects
+                .select_for_update()
+                .only("id", "quantity")
+                .filter(cart=self, product=product)
+                .first()
+            )
+            if not item:
+                raise CartItemNotFoundError()
+
+            if item.quantity <= step:
+                CartItem.objects.filter(pk=item.pk).delete()
+                self.save(update_fields=["updated_at"])
+                raise NotEnoughStockError()
+
+            CartItem.objects.filter(pk=item.pk).update(
+                quantity=F("quantity") - step,
+                updated_at=timezone.now(),
+            )
+            item.refresh_from_db(fields=["quantity", "updated_at"])
+            self.save(update_fields=["updated_at"])
+            return item
 
     def set_item_quantity(self, product, quantity: int):
         try:
@@ -243,11 +296,12 @@ class Cart(models.Model):
         if other.pk == self.pk:
             return self
 
-        for item in other.items.all():
+        for item in other.items.select_related("product", "product__inventory").all():
             self.add_product(
                 product=item.product,
-                quantity=item.quantity,
+                quantity=item.quantity
             )
+
         other.clear()
         return self
 

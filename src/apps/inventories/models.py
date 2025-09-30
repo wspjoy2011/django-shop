@@ -152,6 +152,10 @@ class ProductInventory(models.Model):
         return f"Inventory for {self.product.product_display_name}"
 
     @property
+    def is_available(self) -> bool:
+        return self.is_active and self.available_quantity > 0
+
+    @property
     def available_quantity(self):
         """Calculate available quantity (stock - reserved)"""
         return self.stock_quantity - self.reserved_quantity

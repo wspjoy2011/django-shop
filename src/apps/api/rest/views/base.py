@@ -23,11 +23,14 @@ class APIResponseMixin:
         serializer.is_valid(raise_exception=True)
         return Response(serializer.validated_data, status=status_code)
 
-    def return_message_error(self, message, status_code=status.HTTP_400_BAD_REQUEST):
+    def return_message_error(self, message, status_code=status.HTTP_400_BAD_REQUEST, error_key: str | None = None):
         error_data = {
-            'success': False,
-            'message': message
+            "success": False,
+            "message": message,
         }
+        if error_key:
+            error_data["error_key"] = error_key
+
         serializer = MessageResponseSerializer(data=error_data)
         serializer.is_valid(raise_exception=True)
         return Response(serializer.validated_data, status=status_code)

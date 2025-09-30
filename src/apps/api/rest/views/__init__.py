@@ -21,13 +21,17 @@ from .favorites import (
 
 from .cart import (
     CartToggleAPIView,
-    CartSummaryAPIView
+    CartSummaryAPIView,
+    CartItemIncreaseAPIView,
+    CartItemDecreaseAPIView
 )
 
 __all__ = [
     # Cart views
     'CartToggleAPIView',
     'CartSummaryAPIView',
+    'CartItemIncreaseAPIView',
+    'CartItemDecreaseAPIView',
 
     # Rating views
     'LikeToggleAPIView',

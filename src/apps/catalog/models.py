@@ -276,6 +276,30 @@ class Product(models.Model):
             'is_active': False
         }
 
+    def get_price_info(self) -> dict[str, object]:
+        inventory = getattr(self, "inventory", None)
+
+        if not inventory:
+            return {
+                "current_price": None,
+                "base_price": None,
+                "sale_price": None,
+                "discount_percentage": None,
+            }
+
+        data = {
+            "current_price": inventory.format_current_price(),
+            "base_price": inventory.format_base_price(),
+            "sale_price": None,
+            "discount_percentage": None,
+        }
+
+        if inventory.is_on_sale:
+            data["sale_price"] = inventory.format_sale_price()
+            data["discount_percentage"] = inventory.discount_percentage
+
+        return data
+
     def is_available_for_purchase(self):
         inventory = self.get_inventory()
         return inventory and inventory.is_active and inventory.is_in_stock

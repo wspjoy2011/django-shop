@@ -13,3 +13,4 @@ class ValidationErrorResponseSerializer(serializers.Serializer):
 class MessageResponseSerializer(serializers.Serializer):
     success = serializers.BooleanField(default=False)
     message = serializers.CharField()
+    error_key = serializers.CharField(required=False, allow_null=True)

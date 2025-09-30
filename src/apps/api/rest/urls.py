@@ -16,6 +16,16 @@ urlpatterns = [
         views.CartSummaryAPIView.as_view(),
         name="cart_summary"
     ),
+    path(
+        "cart/items/<int:product_id>/increase/",
+        views.CartItemIncreaseAPIView.as_view(),
+        name="cart_item_increase",
+    ),
+    path(
+        "cart/items/<int:product_id>/decrease/",
+        views.CartItemDecreaseAPIView.as_view(),
+        name="cart_item_decrease",
+    ),
 
     # Rating System APIs
     path(

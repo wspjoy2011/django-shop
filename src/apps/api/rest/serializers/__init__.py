@@ -24,7 +24,9 @@ from .favorites import (
 
 from .cart import (
     CartToggleResponseSerializer,
-    CartSummarySerializer
+    CartSummarySerializer,
+    CartItemPriceSerializer,
+    CartItemDetailSerializer
 )
 
 from .common import (
@@ -37,6 +39,8 @@ __all__ = [
     # Cart serializers
     'CartToggleResponseSerializer',
     'CartSummarySerializer',
+    'CartItemPriceSerializer',
+    'CartItemDetailSerializer',
 
     # Rating serializers
     'RatingCreateUpdateRequestSerializer',
