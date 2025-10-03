@@ -83,10 +83,6 @@ export class MessageManager {
 
     static showGlobalMessage(message, type = 'info', options = {}) {
         const messagesContainer = document.querySelector('.messages-container, #messages');
-        if (!messagesContainer) {
-            console.warn('Global message container not found. Message:', message);
-            return null;
-        }
 
         const typeMap = {
             warning: { alertClass: 'alert-warning', iconClass: 'fas fa-exclamation-circle fa-lg', title: 'Warning:' },

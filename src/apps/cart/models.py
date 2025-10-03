@@ -6,6 +6,7 @@ from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.db.models import F, Sum
 from django.db.models.functions import Coalesce
+from django.urls import reverse
 from django.utils import timezone
 
 from apps.cart.exceptions import NotEnoughStockError, ProductUnavailableError, CartItemNotFoundError
@@ -336,7 +337,7 @@ class CartItem(models.Model):
 
     class Meta:
         unique_together = [('cart', 'product')]
-        ordering = ['-updated_at', '-created_at']
+        ordering = ['-created_at']
 
     def __str__(self) -> str:
         return f"{self.cart_id} | {self.product_id} x {self.quantity}"
@@ -350,3 +351,9 @@ class CartItem(models.Model):
     def format_line_total(self):
         inv = self.product.inventory
         return inv.currency.format_amount(self.line_total)
+
+    def get_api_increase_url(self):
+        return reverse("api:cart_item_increase", kwargs={"product_id": self.product_id})
+
+    def get_api_decrease_url(self):
+        return reverse("api:cart_item_decrease", kwargs={"product_id": self.product_id})

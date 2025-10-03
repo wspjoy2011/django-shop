@@ -19,8 +19,8 @@ class CartItemPriceSerializer(serializers.Serializer):
     current_price = serializers.CharField()
     base_price = serializers.CharField()
     sale_price = serializers.CharField(required=False, allow_null=True)
-    discount_percentage = serializers.IntegerField(required=False, allow_null=True)
-
+    discount_percentage = serializers.FloatField(required=False, allow_null=True)
+    total_price = serializers.CharField()
 
 class CartItemDetailSerializer(serializers.Serializer):
     id = serializers.IntegerField()

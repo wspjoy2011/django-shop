@@ -1,4 +1,4 @@
-import { getCookie, isLoginRedirectResponse } from '../httpAuth.js';
+import {getCookie, isLoginRedirectResponse} from '../httpAuth.js';
 
 export class AuthenticatedHttpClient {
     constructor(csrfToken = null) {
@@ -71,6 +71,11 @@ export class AuthenticatedHttpClient {
         } else {
             if (data && data.error) {
                 const error = new Error(data.error);
+                if (onError) onError(error);
+                return {success: false, error, data};
+            } else if (data && data.error_key) {
+                const error = new Error(data.message || 'Operation failed');
+                error.error_key = data.error_key;
                 if (onError) onError(error);
                 return {success: false, error, data};
             } else if (data && onSuccess) {

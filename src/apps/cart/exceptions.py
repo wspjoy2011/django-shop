@@ -1,22 +1,27 @@
 from django.core.exceptions import ValidationError
 
 
-class ProductUnavailableError(ValidationError):
+class CartBaseError(ValidationError):
+    error_key: str = "cart_error"
+    default_message: str = "Cart error"
+
+    def __init__(self, message: str | None = None):
+        super().__init__(message or self.default_message)
+
+    def __str__(self):
+        return self.messages[0] if self.messages else self.default_message
+
+
+class ProductUnavailableError(CartBaseError):
     error_key = "product_unavailable"
-
-    def __init__(self, message: str | None = None):
-        super().__init__(message or "Product is not available.")
+    default_message = "Product is not available."
 
 
-class NotEnoughStockError(ValidationError):
+class NotEnoughStockError(CartBaseError):
     error_key = "not_enough_stock"
-
-    def __init__(self, message: str | None = None):
-        super().__init__(message or "Not enough stock available.")
+    default_message = "Not enough stock available."
 
 
-class CartItemNotFoundError(ValidationError):
+class CartItemNotFoundError(CartBaseError):
     error_key = "cart_item_not_found"
-
-    def __init__(self, message: str | None = None):
-        super().__init__(message or "Cart item not found.")
+    default_message = "Cart item not found."

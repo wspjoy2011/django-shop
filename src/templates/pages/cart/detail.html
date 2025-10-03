@@ -7,6 +7,10 @@
   <link rel="stylesheet" href="{% static 'css/pages/cart-detail.css' %}">
 {% endblock %}
 
+{% block extra_js %}
+  <script type="module" src="{% static 'js/components/cart-quantity-handler.js' %}" defer></script>
+{% endblock %}
+
 {% block content %}
   <div class="mb-5">
     <section class="cart-hero my-4 p-4 p-lg-5">
@@ -33,6 +37,7 @@
         <!-- Left: items list -->
         <div class="col-12 col-lg-8">
           <div class="cart-items">
+
             {% for item in user_cart.items_list %}
               {% with product=item.product %}
                 <article class="cart-item-card position-relative">
@@ -72,60 +77,71 @@
 
                     <!-- Price row -->
                     {% with inventory=product.get_inventory %}
-                      {% if inventory.is_on_sale %}
-                        <div class="cart-item-price">
+                      <div class="cart-item-price">
+                        {% if inventory.is_on_sale %}
                           <span class="current-price">{{ inventory.format_sale_price }}</span>
                           <span class="old-price">{{ inventory.format_base_price }}</span>
                           <span class="badge badge-saving">−{{ inventory.discount_percentage }}%</span>
-                        </div>
-                      {% else %}
-                        <div class="cart-item-price">
+                        {% else %}
                           <span class="current-price">{{ inventory.format_base_price }}</span>
-                        </div>
-                      {% endif %}
+                        {% endif %}
+                      </div>
 
                       <!-- Quantity controls and line total -->
                       <div class="cart-item-controls d-flex align-items-center justify-content-between">
-                      <div class="qty-stepper">
-                        <!-- Decrement -->
-                        <button class="stepper-btn" aria-label="Decrease quantity">
-                          <i class="fas fa-minus"></i>
-                        </button>
 
-                        <div class="qty-value" aria-live="polite">{{ item.quantity }}</div>
+                        <div class="qty-stepper">
+                          <!-- Decrement -->
+                          <button class="stepper-btn"
+                                  aria-label="Decrease quantity"
+                                  data-decrease-url="{{ item.get_api_decrease_url }}"
+                                  {% if item.quantity <= 1 %}disabled{% endif %}>
+                            <i class="fas fa-minus"></i>
+                          </button>
 
-                        <!-- Increment -->
-                        <button class="stepper-btn" aria-label="Increase quantity">
-                          <i class="fas fa-plus"></i>
-                        </button>
-                      </div>
+                          <div class="qty-value"
+                               id="cart-item-qty-{{ item.id }}"
+                               aria-live="polite">
+                            {{ item.quantity }}
+                          </div>
 
-                      <!-- Per-item total using effective price -->
-                      <div class="line-total">
-                        <span class="label">Line total</span>
-                        <span class="value">
-                          {{ inventory.format_current_price }} × {{ item.quantity }} = {{ item.format_line_total }}
-                        </span>
+                          <!-- Increment -->
+                          <button class="stepper-btn"
+                                  aria-label="Increase quantity"
+                                  data-increase-url="{{ item.get_api_increase_url }}">
+                            <i class="fas fa-plus"></i>
+                          </button>
+
+                          <span class="qty-spinner is-hidden" aria-hidden="true"></span>
+
+                        </div>
+
+                        <!-- Per-item total using effective price -->
+                        <div class="line-total">
+                          <span class="label">Line total</span>
+                          <span
+                                  class="value"
+                                  id="cart-item-total-{{ item.id }}">
+                            {{ inventory.format_current_price }} × {{ item.quantity }} = {{ item.format_line_total }}
+                          </span>
+                        </div>
                       </div>
                     {% endwith %}
 
-                    </div>
-                  </div>
-
-                  <!-- Unavailable overlay & strike-through -->
-                  {% with stock=product.get_stock_status %}
-                    {% if not stock.is_active or not stock.in_stock %}
-                      <div class="cart-item-overlay" title="Unavailable" aria-hidden="true"></div>
-                      <div class="cart-item-strike" aria-hidden="true"></div>
-                      <div class="cart-item-overlay-badge">
-                        {% if not stock.is_active %}
-                          Not active
-                        {% else %}
-                          Out of stock
-                        {% endif %}
-                      </div>
-                    {% endif %}
-                  {% endwith %}
+                    <!-- Unavailable overlay & strike-through -->
+                    {% with stock=product.get_stock_status %}
+                      {% if not stock.is_active or not stock.in_stock %}
+                        <div class="cart-item-overlay" title="Unavailable" aria-hidden="true"></div>
+                        <div class="cart-item-strike" aria-hidden="true"></div>
+                        <div class="cart-item-overlay-badge">
+                          {% if not stock.is_active %}
+                            Not active
+                          {% else %}
+                            Out of stock
+                          {% endif %}
+                        </div>
+                      {% endif %}
+                    {% endwith %}
 
                 </article>
               {% endwith %}

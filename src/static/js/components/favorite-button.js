@@ -141,7 +141,6 @@ class FavoriteButtonHandler extends BaseComponent {
             );
 
         } catch (error) {
-            console.error('Favorite toggle error:', error);
             if (AuthenticationHandler.isAuthenticationError(error)) {
                 this.handleLogoutDetection(component);
             } else {

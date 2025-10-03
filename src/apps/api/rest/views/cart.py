@@ -59,6 +59,7 @@ class CartSummaryAPIView(BaseAPIView):
 
 
 class CartItemIncreaseAPIView(BaseAPIView):
+    permission_classes = [AllowAny]
 
     def post(self, request, product_id: int, *args, **kwargs):
         product = get_object_or_404(Product, pk=product_id)
@@ -82,7 +83,10 @@ class CartItemIncreaseAPIView(BaseAPIView):
             "id": item.pk,
             "product_id": item.product_id,
             "quantity": item.quantity,
-            "price": product.get_price_info(),
+            "price": {
+                **product.get_price_info(),
+                "total_price": str(item.line_total),
+            },
         }
         return self.return_success_response(
             data=payload,
@@ -92,6 +96,7 @@ class CartItemIncreaseAPIView(BaseAPIView):
 
 
 class CartItemDecreaseAPIView(BaseAPIView):
+    permission_classes = [AllowAny]
 
     def post(self, request, product_id: int, *args, **kwargs):
         product = get_object_or_404(Product, pk=product_id)
@@ -115,7 +120,10 @@ class CartItemDecreaseAPIView(BaseAPIView):
             "id": item.pk,
             "product_id": item.product_id,
             "quantity": item.quantity,
-            "price": product.get_price_info(),
+            "price": {
+                **product.get_price_info(),
+                "total_price": str(item.line_total),
+            },
         }
         return self.return_success_response(
             data=payload,
