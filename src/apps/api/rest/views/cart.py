@@ -7,6 +7,7 @@ from apps.api.rest.serializers import CartToggleResponseSerializer, CartSummaryS
     CartItemDetailSerializer
 from apps.api.rest.views.base import BaseAPIView
 from apps.cart.exceptions import ProductUnavailableError, NotEnoughStockError, CartItemNotFoundError
+from apps.cart.mixins import CartQuerysetMixin
 from apps.catalog.models import Product
 
 
@@ -40,21 +41,16 @@ class CartToggleAPIView(BaseAPIView):
         )
 
 
-class CartSummaryAPIView(BaseAPIView):
+class CartSummaryAPIView(CartQuerysetMixin, BaseAPIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        cart = request.cart
-
-        data = {
-            "total_value": cart.total_value,
-            "total_quantity": cart.total_quantity,
-            "items_count": cart.items_count,
-        }
+        cart = self.get_cart()
+        data = cart.get_summary()
         return self.return_success_response(
             data=data,
             serializer_class=CartSummarySerializer,
-            status_code=status.HTTP_200_OK,
+            status_code=200,
         )
 
 

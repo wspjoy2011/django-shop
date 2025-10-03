@@ -155,28 +155,29 @@
           <aside class="cart-summary">
             <h2 class="h5 fw-bold mb-3"><i class="fas fa-receipt me-2"></i> Order Summary</h2>
 
-            <ul class="summary-list">
-              <li>
-                <span>Items</span>
-                <span>{{ user_cart.total_quantity_available }}</span>
-              </li>
+            {% with summary=user_cart.get_summary %}
+              <ul class="summary-list">
+                <li>
+                  <span>Items</span>
+                  <span>{{ summary.total_items }}</span>
+                </li>
 
-              <li>
-                <span>Subtotal</span>
-                <span>{{ user_cart.subtotal_formatted }}</span>
-              </li>
+                <li>
+                  <span>Subtotal</span>
+                  <span>{{ summary.total_subtotal }}</span>
+                </li>
 
-              <li class="saving">
-                <span>Discount</span>
-                <span>{{ user_cart.discount_formatted }}</span>
-              </li>
+                <li class="saving">
+                  <span>Discount</span>
+                  <span>{{ summary.total_discount }}</span>
+                </li>
 
-              <li class="total">
-                <span>Total</span>
-                <span>{{ user_cart.total_formatted }}</span>
-              </li>
-
-            </ul>
+                <li class="total">
+                  <span>Total</span>
+                  <span>{{ summary.total_value }}</span>
+                </li>
+              </ul>
+            {% endwith %}
 
             <button class="btn btn-primary w-100 rounded-pill mt-2" disabled>
               Continue to checkout

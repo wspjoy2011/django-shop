@@ -10,9 +10,11 @@ class CartToggleResponseSerializer(serializers.Serializer):
 
 
 class CartSummarySerializer(serializers.Serializer):
-    total_value = serializers.DecimalField(max_digits=14, decimal_places=2)
-    total_quantity = serializers.IntegerField()
-    items_count = serializers.IntegerField()
+    total_items = serializers.CharField()
+    total_subtotal = serializers.CharField()
+    total_discount = serializers.CharField()
+    total_value = serializers.CharField()
+    total_quantity = serializers.CharField()
 
 
 class CartItemPriceSerializer(serializers.Serializer):
@@ -21,6 +23,7 @@ class CartItemPriceSerializer(serializers.Serializer):
     sale_price = serializers.CharField(required=False, allow_null=True)
     discount_percentage = serializers.FloatField(required=False, allow_null=True)
     total_price = serializers.CharField()
+
 
 class CartItemDetailSerializer(serializers.Serializer):
     id = serializers.IntegerField()

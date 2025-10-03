@@ -316,6 +316,16 @@ class Cart(models.Model):
             .count()
         )
 
+    def get_summary(self):
+        return {
+            "total_quantity": self.total_quantity_available,
+            "total_subtotal": self.subtotal_formatted(),
+            "total_discount": self.discount_formatted(),
+            "total_value": self.total_formatted(),
+            "total_items": self.items_count
+        }
+
+
 class CartItem(models.Model):
     cart = models.ForeignKey(
         Cart,

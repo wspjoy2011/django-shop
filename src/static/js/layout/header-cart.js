@@ -39,7 +39,7 @@ class HeaderCartHandler extends BaseComponent {
             const payload = await resp.json();
 
             const data = payload.success ? payload : payload;
-            const itemsCount = Number(data.items_count) || 0;
+            const itemsCount = Number(data.total_items) || 0;
             const totalQty = Number(data.total_quantity) || 0;
             const totalVal = data.total_value ?? '0.00';
 
