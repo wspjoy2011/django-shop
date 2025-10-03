@@ -1,6 +1,7 @@
 from django.http import HttpRequest, HttpResponse
 
 from .cookies import CartCookieManager
+from .loader import CartLoader
 from .resolver import CartResolver
 
 
@@ -10,7 +11,8 @@ class CartMiddleware:
 
     def __call__(self, request: HttpRequest) -> HttpResponse:
         cart_token_value = CartCookieManager.get_token(request)
-        request.cart = CartResolver.resolve(request, cart_token_value)
+        cart = CartResolver.resolve(request, cart_token_value)
+        request.cart = CartLoader.get_cart(cart.pk)
 
         response = self.get_response(request)
 

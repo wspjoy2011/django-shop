@@ -10,6 +10,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.cart.exceptions import NotEnoughStockError, ProductUnavailableError, CartItemNotFoundError
+from apps.cart.query_fields import CART_ITEM_SELECT_RELATED, CART_ITEM_ONLY_FIELDS
 from apps.inventories.models import ProductInventory
 
 User = get_user_model()
@@ -104,11 +105,6 @@ class Cart(models.Model):
 
     def _get_available_items_list(self):
         items = getattr(self, "available_items_list", None)
-        if items is None:
-            raise RuntimeError(
-                "Cart.available_items_list is missing. "
-                "Make sure your view prefetches it via Prefetch(..., to_attr='available_items_list')."
-            )
         return items
 
     @property

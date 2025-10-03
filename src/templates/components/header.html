@@ -98,21 +98,23 @@
 
       <!-- Cart icon  -->
       <div class="me-3">
-        <a href="{% url 'cart:cart_detail' %}"
-           class="text-decoration-none position-relative cart-icon-container"
-           data-tooltip="Cart
-            • Items: {{ cart_summary.items_count }}
-            • Qty: {{ cart_summary.total_quantity }}
-            • Total: {{ cart_summary.total_value }}">
-          {% if cart_summary.items_count > 0 %}
-            <i class="fas fa-shopping-cart cart-filled fs-4"></i>
-            <span class="cart-count-bubble" data-count="{{ cart_summary.items_count }}">
-        {{ cart_summary.items_count }}
-      </span>
-          {% else %}
-            <i class="fas fa-shopping-cart cart-empty fs-4"></i>
-          {% endif %}
-        </a>
+        {% with summary=cart.get_summary %}
+          <a href="{% url 'cart:cart_detail' %}"
+             class="text-decoration-none position-relative cart-icon-container"
+             data-tooltip="Cart
+                • Items: {{ summary.total_items }}
+                • Qty: {{ summary.total_quantity }}
+                • Total: {{ summary.total_value }}">
+            {% if summary.total_items|add:0 > 0 %}
+              <i class="fas fa-shopping-cart cart-filled fs-4"></i>
+              <span class="cart-count-bubble" data-count="{{ summary.total_items }}">
+                {{ summary.total_items }}
+              </span>
+            {% else %}
+              <i class="fas fa-shopping-cart cart-empty fs-4"></i>
+            {% endif %}
+          </a>
+        {% endwith %}
       </div>
 
       <!-- Auth controls -->
