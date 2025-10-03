@@ -11,7 +11,6 @@ class CartLoader:
             CartItem.objects
             .select_related(*CART_ITEM_SELECT_RELATED)
             .only(*CART_ITEM_ONLY_FIELDS)
-            .order_by("-updated_at", "-created_at")
         )
 
     @classmethod
@@ -31,8 +30,16 @@ class CartLoader:
             .filter(pk=cart_id)
             .select_related("user", "token")
             .prefetch_related(
-                Prefetch("items", queryset=cls.get_items_queryset(), to_attr="items_list"),
-                Prefetch("items", queryset=cls.get_available_items_queryset(), to_attr="available_items_list"),
+                Prefetch(
+                    "items",
+                    queryset=cls.get_items_queryset(),
+                    to_attr="items_list"
+                ),
+                Prefetch(
+                    "items",
+                    queryset=cls.get_available_items_queryset(),
+                    to_attr="available_items_list"
+                ),
             )
         )
 

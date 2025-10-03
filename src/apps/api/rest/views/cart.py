@@ -82,7 +82,7 @@ class CartItemIncreaseAPIView(BaseAPIView):
             "quantity": item.quantity,
             "price": {
                 **product.get_price_info(),
-                "total_price": str(item.line_total),
+                "total_price": str(item.format_line_total),
             },
         }
         return self.return_success_response(

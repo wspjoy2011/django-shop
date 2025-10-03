@@ -16,7 +16,7 @@ class CartQuantityHandler extends BaseComponent {
             spinner: '.qty-spinner',
             messages: '.cart-messages-container'
         };
-        this.cssClasses = { disabled: 'is-disabled', hidden: 'is-hidden' };
+        this.cssClasses = {disabled: 'is-disabled', hidden: 'is-hidden'};
         this.httpClient = new AuthenticatedHttpClient();
         this.maxQuantityByItemId = new Map();
         this.init();
@@ -42,11 +42,11 @@ class CartQuantityHandler extends BaseComponent {
     }
 
     setupBroadcastSubscriptions() {
-        this.broadcastManager.subscribe('cart_item_updated', (payload) => {
+        this.broadcastManager.subscribe('cart_item_quantity_changed', (payload) => {
             this.updateUiFromPayload(payload);
         });
-        this.broadcastManager.subscribe('cart_item_removed', (payload) => {
-            this.updateUiRemoved(payload);
+        this.broadcastManager.subscribe('cart_item_max_reached', (payload) => {
+            this.onMaxReached(payload);
         });
     }
 
@@ -69,11 +69,11 @@ class CartQuantityHandler extends BaseComponent {
 
         this.setLoadingState(stepper, true);
 
-        const outcome = { ok: false, errorKey: null, quantity: null, payload: null };
+        const outcome = {ok: false, errorKey: null, quantity: null, payload: null};
 
         try {
             await this.httpClient.handleResponse(
-                await this.httpClient.sendRequest(requestUrl, { method: 'POST' }),
+                await this.httpClient.sendRequest(requestUrl, {method: 'POST'}),
                 itemCardElement,
                 {
                     onSuccess: (data) => {
@@ -93,7 +93,7 @@ class CartQuantityHandler extends BaseComponent {
 
             if (outcome.ok && outcome.payload) {
                 this.updateUiFromPayload(outcome.payload);
-                this.broadcastManager.broadcast('cart_item_updated', outcome.payload);
+                this.broadcastManager.broadcast('cart_item_quantity_changed', outcome.payload);
             } else {
                 this.onErrorFinal(itemCardElement, outcome);
             }
@@ -113,10 +113,14 @@ class CartQuantityHandler extends BaseComponent {
             if (itemId != null && currentQuantity != null) {
                 this.maxQuantityByItemId.set(itemId, currentQuantity);
                 this.adjustButtonsForQuantity(itemCardElement, currentQuantity);
+                this.broadcastManager.broadcast('cart_item_max_reached', {
+                    id: itemId,
+                    max_quantity: currentQuantity
+                });
             } else {
                 this.toggleButtons(
                     itemCardElement,
-                    { disableIncrease: true, disableDecrease: false }
+                    {disableIncrease: true, disableDecrease: false}
                 );
             }
             return;
@@ -125,16 +129,17 @@ class CartQuantityHandler extends BaseComponent {
         if (errorKey === 'product_unavailable') {
             this.toggleButtons(
                 itemCardElement,
-                { disableIncrease: true, disableDecrease: false }
+                {disableIncrease: true, disableDecrease: false}
             );
             return;
         }
 
         this.toggleButtons(
             itemCardElement,
-            { disableIncrease: false, disableDecrease: false }
+            {disableIncrease: false, disableDecrease: false}
         );
     }
+
 
     updateUiFromPayload(payload) {
         const qtyEl = document.querySelector(this.selectors.quantityValueById(payload.id));
@@ -146,9 +151,14 @@ class CartQuantityHandler extends BaseComponent {
                 `${payload.price.current_price} × ${payload.quantity} = ${payload.price.total_price}`;
         }
 
+        if (payload.max_quantity != null) {
+            this.maxQuantityByItemId.set(payload.id, payload.max_quantity);
+        }
+
         const card = qtyEl ? qtyEl.closest(this.selectors.itemCard) : null;
         if (card) this.adjustButtonsForQuantity(card, payload.quantity);
     }
+
 
     updateUiRemoved(payload) {
         const qtyEl = document.querySelector(this.selectors.quantityValueById(payload.id));
@@ -159,8 +169,25 @@ class CartQuantityHandler extends BaseComponent {
         if (card) {
             const itemId = this.getItemIdFromCard(card);
             if (itemId != null) this.maxQuantityByItemId.delete(itemId);
-            this.toggleButtons(card, { disableIncrease: false, disableDecrease: true });
+            this.toggleButtons(
+                card,
+                {disableIncrease: false, disableDecrease: true}
+            );
         }
+    }
+
+    onMaxReached(payload) {
+        this.maxQuantityByItemId.set(payload.id, payload.max_quantity);
+        const card = this.findCardByItemId(payload.id);
+        if (!card) return
+
+        const q = this.getCurrentQuantity(card);
+        this.adjustButtonsForQuantity(card, q);
+    }
+
+    findCardByItemId(id) {
+        const el = document.querySelector(this.selectors.quantityValueById(id));
+        return el ? el.closest(this.selectors.itemCard) : null;
     }
 
     getItemIdFromCard(card) {
@@ -184,10 +211,10 @@ class CartQuantityHandler extends BaseComponent {
         const disableDecrease = quantity <= 1;
         const disableIncrease = typeof max === 'number' ? quantity >= max : false;
 
-        this.toggleButtons(card, { disableIncrease, disableDecrease });
+        this.toggleButtons(card, {disableIncrease, disableDecrease});
     }
 
-    toggleButtons(card, { disableIncrease, disableDecrease }) {
+    toggleButtons(card, {disableIncrease, disableDecrease}) {
         const incBtn = card.querySelector(this.selectors.buttonIncrease);
         const decBtn = card.querySelector(this.selectors.buttonDecrease);
         if (incBtn) incBtn.toggleAttribute('disabled', !!disableIncrease);

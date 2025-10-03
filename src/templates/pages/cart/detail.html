@@ -9,6 +9,7 @@
 
 {% block extra_js %}
   <script type="module" src="{% static 'js/components/cart-quantity-handler.js' %}" defer></script>
+  <script type="module" src="{% static 'js/components/cart-summary-handler.js' %}" defer></script>
 {% endblock %}
 
 {% block content %}
@@ -152,34 +153,34 @@
 
         <!-- Right: summary -->
         <div class="col-12 col-lg-4">
-          <aside class="cart-summary">
+          <aside class="cart-summary" id="cart-summary" data-summary-url="{% url 'api:cart_summary' %}">
             <h2 class="h5 fw-bold mb-3"><i class="fas fa-receipt me-2"></i> Order Summary</h2>
 
             {% with summary=cart.get_summary %}
               <ul class="summary-list">
                 <li>
                   <span>Items</span>
-                  <span>{{ summary.total_items }}</span>
+                  <span id="cart-summary-items">{{ summary.total_items }}</span>
                 </li>
 
                 <li>
                   <span>Quantity</span>
-                  <span>{{ summary.total_quantity }}</span>
+                  <span id="cart-summary-quantity">{{ summary.total_quantity }}</span>
                 </li>
 
                 <li>
                   <span>Subtotal</span>
-                  <span>{{ summary.total_subtotal }}</span>
+                  <span id="cart-summary-subtotal">{{ summary.total_subtotal }}</span>
                 </li>
 
                 <li class="saving">
                   <span>Discount</span>
-                  <span>{{ summary.total_discount }}</span>
+                  <span id="cart-summary-discount">{{ summary.total_discount }}</span>
                 </li>
 
                 <li class="total">
                   <span>Total</span>
-                  <span>{{ summary.total_value }}</span>
+                  <span id="cart-summary-total">{{ summary.total_value }}</span>
                 </li>
               </ul>
             {% endwith %}
