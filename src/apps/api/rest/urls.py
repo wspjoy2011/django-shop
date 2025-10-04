@@ -7,6 +7,11 @@ app_name = 'api'
 urlpatterns = [
     # Cart System APIs
     path(
+        "cart/",
+        views.CartClearAPIView.as_view(),
+        name="cart_clear"
+    ),
+    path(
         'products/<int:product_id>/cart/',
         views.CartToggleAPIView.as_view(),
         name='product_cart_toggle'

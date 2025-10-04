@@ -137,3 +137,11 @@ class CartItemDeleteAPIView(BaseAPIView):
         request.cart.remove_product(product)
 
         return self.return_no_content()
+
+
+class CartClearAPIView(BaseAPIView):
+    permission_classes = [AllowAny]
+
+    def delete(self, request: CartHttpRequest):
+        request.cart.clear()
+        return self.return_no_content()

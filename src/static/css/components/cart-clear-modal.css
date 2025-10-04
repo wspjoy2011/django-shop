@@ -1,0 +1,188 @@
+.cart-clear-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1060;
+    display: grid;
+    place-items: center;
+    opacity: 1;
+    visibility: visible;
+    transition: opacity .28s ease, visibility .28s ease;
+    isolation: isolate;
+    pointer-events: none;
+}
+
+.cart-clear-modal.hidden {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.cart-clear-modal .modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(7, 7, 12, .6);
+    backdrop-filter: blur(4px);
+    animation: cartClearOverlayIn .28s ease both;
+    z-index: 1;
+}
+
+.cart-clear-modal.hidden .modal-overlay {
+    animation: cartClearOverlayOut .22s ease both;
+}
+
+.cart-clear-modal .modal-dialog {
+    position: relative;
+    width: 92%;
+    max-width: 460px;
+    background: #fff;
+    border-radius: .75rem;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, .25);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transform: translateY(0) scale(1);
+    transition: transform .28s cubic-bezier(.2, .8, .2, 1);
+    animation: cartClearDialogIn .28s cubic-bezier(.2, .8, .2, 1) both;
+    pointer-events: auto;
+    z-index: 2;
+}
+
+.cart-clear-modal.hidden .modal-dialog {
+    animation: cartClearDialogOut .2s cubic-bezier(.2, .8, .2, 1) both;
+}
+
+.cart-clear-modal .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #eef0f2;
+}
+
+.cart-clear-modal .modal-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0;
+    color: #dc3545;
+    letter-spacing: .2px;
+}
+
+.cart-clear-modal .modal-close {
+    border: 0;
+    background: transparent;
+    font-size: 1.6rem;
+    line-height: 1;
+    color: #6c757d;
+    opacity: .8;
+    padding: 0 .25rem;
+    cursor: pointer;
+    transition: opacity .18s ease, transform .18s ease;
+}
+
+.cart-clear-modal .modal-close:hover {
+    opacity: 1;
+    transform: scale(1.05);
+}
+
+.cart-clear-modal .modal-body {
+    padding: 1.75rem 1.25rem;
+    text-align: center;
+}
+
+.cart-clear-modal .modal-icon {
+    font-size: 2.4rem;
+    color: #dc3545;
+    margin-bottom: .75rem;
+    filter: drop-shadow(0 8px 18px rgba(220, 53, 69, .25));
+    animation: cartClearPulse .9s ease-in-out infinite alternate;
+}
+
+.cart-clear-modal .modal-body p {
+    margin-bottom: .5rem;
+    font-size: 1rem;
+}
+
+.cart-clear-modal .modal-body .text-muted {
+    font-size: .92rem;
+}
+
+.cart-clear-modal .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: .75rem;
+    padding: 1rem 1.25rem;
+    background: #f8f9fa;
+    border-top: 1px solid #eef0f2;
+}
+
+.cart-clear-modal .modal-footer .btn {
+    transition: transform .16s ease, filter .16s ease, box-shadow .16s ease;
+    cursor: pointer;
+}
+
+.cart-clear-modal .modal-footer .btn:hover {
+    filter: brightness(.96);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, .08);
+    cursor: pointer;
+}
+
+.cart-clear-modal .modal-confirm {
+    position: relative;
+    min-width: 128px;
+}
+
+.cart-clear-modal .loading-spinner {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.cart-clear-modal .hidden {
+    display: none !important;
+}
+
+@keyframes cartClearOverlayIn {
+    from {
+        opacity: 0
+    }
+    to {
+        opacity: 1
+    }
+}
+
+@keyframes cartClearOverlayOut {
+    from {
+        opacity: 1
+    }
+    to {
+        opacity: 0
+    }
+}
+
+@keyframes cartClearDialogIn {
+    from {
+        transform: translateY(12px) scale(.98)
+    }
+    to {
+        transform: translateY(0) scale(1)
+    }
+}
+
+@keyframes cartClearDialogOut {
+    from {
+        transform: translateY(0) scale(1)
+    }
+    to {
+        transform: translateY(8px) scale(.98)
+    }
+}
+
+@keyframes cartClearPulse {
+    from {
+        transform: translateZ(0) scale(1)
+    }
+    to {
+        transform: translateZ(0) scale(1.06)
+    }
+}

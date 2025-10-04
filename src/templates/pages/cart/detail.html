@@ -5,12 +5,14 @@
 
 {% block extra_css %}
   <link rel="stylesheet" href="{% static 'css/pages/cart-detail.css' %}">
+  <link rel="stylesheet" href="{% static 'css/components/cart-clear-modal.css' %}">
 {% endblock %}
 
 {% block extra_js %}
   <script type="module" src="{% static 'js/components/cart-quantity-handler.js' %}" defer></script>
   <script type="module" src="{% static 'js/components/cart-summary-handler.js' %}" defer></script>
   <script type="module" src="{% static 'js/components/cart-item-remove-handler.js' %}" defer></script>
+  <script type="module" src="{% static 'js/components/cart-clear-handler.js' %}" defer></script>
 {% endblock %}
 
 {% block content %}
@@ -26,7 +28,9 @@
           </p>
         </div>
         {% if cart.items_count %}
-          <button class="cart-clear-btn">
+          <button id="cart-clear-btn"
+                  class="cart-clear-btn"
+                  data-clear-url="{% url 'api:cart_clear' %}">
             <i class="fas fa-trash-can"></i>
             <span>Clear cart</span>
           </button>
@@ -214,6 +218,10 @@
     {% endif %}
   </div>
 
+  <!-- Include Modal Template -->
+  {% include 'components/cart/cart_clear_modal.html' %}
+
+  <!-- Hidden template for JavaScript -->
   <script type="text/template" id="cart-empty-template">
     {% include 'components/cart/cart_empty_template.html' %}
   </script>
