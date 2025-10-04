@@ -175,8 +175,10 @@
 
 .cart-item-overlay-badge {
     position: absolute;
-    top: 12px;
-    right: 12px;
+    top: 50%;
+    left: 50%;
+    right: auto;
+    transform: translate(-50%, -50%);
     z-index: 6;
     font-weight: 800;
     font-size: .8rem;
@@ -354,6 +356,13 @@
 
 .qty-spinner.is-hidden {
     opacity: 0;
+}
+
+.cart-item-card button[data-remove-url] {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
 }
 
 @keyframes qtyspin {
