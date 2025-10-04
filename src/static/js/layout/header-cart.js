@@ -26,6 +26,14 @@ class HeaderCartHandler extends BaseComponent {
         this.broadcastManager.subscribe('cart_updated', () => {
             void this.fetchAndUpdateSummary();
         });
+
+        this.broadcastManager.subscribe('cart_item_removed', () => {
+            void this.fetchAndUpdateSummary();
+        });
+
+        this.broadcastManager.subscribe('cart_item_quantity_changed', (payload) => {
+            void this.fetchAndUpdateSummary();
+        });
     }
 
     async fetchAndUpdateSummary() {

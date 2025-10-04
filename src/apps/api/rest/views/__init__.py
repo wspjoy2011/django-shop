@@ -23,7 +23,8 @@ from .cart import (
     CartToggleAPIView,
     CartSummaryAPIView,
     CartItemIncreaseAPIView,
-    CartItemDecreaseAPIView
+    CartItemDecreaseAPIView,
+    CartItemDeleteAPIView
 )
 
 __all__ = [
@@ -32,6 +33,7 @@ __all__ = [
     'CartSummaryAPIView',
     'CartItemIncreaseAPIView',
     'CartItemDecreaseAPIView',
+    'CartItemDeleteAPIView',
 
     # Rating views
     'LikeToggleAPIView',

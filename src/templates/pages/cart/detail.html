@@ -10,6 +10,7 @@
 {% block extra_js %}
   <script type="module" src="{% static 'js/components/cart-quantity-handler.js' %}" defer></script>
   <script type="module" src="{% static 'js/components/cart-summary-handler.js' %}" defer></script>
+  <script type="module" src="{% static 'js/components/cart-item-remove-handler.js' %}" defer></script>
 {% endblock %}
 
 {% block content %}
@@ -34,14 +35,15 @@
     </section>
 
     {% if cart.items.exists %}
-      <div class="row g-4 cart-layout">
+      <div class="row g-4 cart-layout" id="cart-layout">
         <!-- Left: items list -->
         <div class="col-12 col-lg-8">
           <div class="cart-items">
 
             {% for item in cart.items_list %}
               {% with product=item.product %}
-                <article class="cart-item-card position-relative">
+                <article id="cart-item-card-{{ item.id }}"
+                         class="cart-item-card position-relative">
                   <!-- Image -->
                   <div class="cart-item-media">
                     {% if product.image_url %}
@@ -69,7 +71,10 @@
                       </div>
 
                       <!-- Remove button -->
-                      <button class="btn btn-link text-danger p-0" aria-label="Remove item">
+                      <button id="cart-item-remove-{{ product.id }}"
+                              class="btn btn-link text-danger p-0"
+                              data-remove-url="{% url 'api:cart_item_delete' product.id %}"
+                              aria-label="Remove item">
                         <i class="fas fa-times"></i>
                       </button>
                     </div>
@@ -120,9 +125,8 @@
                         <!-- Per-item total using effective price -->
                         <div class="line-total">
                           <span class="label">Line total</span>
-                          <span
-                                  class="value"
-                                  id="cart-item-total-{{ item.id }}">
+                          <span class="value"
+                                id="cart-item-total-{{ item.id }}">
                             {{ inventory.format_current_price }} × {{ item.quantity }} = {{ item.format_line_total }}
                           </span>
                         </div>
@@ -152,7 +156,7 @@
         </div>
 
         <!-- Right: summary -->
-        <div class="col-12 col-lg-4">
+        <div class="col-12 col-lg-4" id="cart-summary-col">
           <aside class="cart-summary" id="cart-summary" data-summary-url="{% url 'api:cart_summary' %}">
             <h2 class="h5 fw-bold mb-3"><i class="fas fa-receipt me-2"></i> Order Summary</h2>
 
@@ -209,4 +213,9 @@
       </div>
     {% endif %}
   </div>
+
+  <script type="text/template" id="cart-empty-template">
+    {% include 'components/cart/cart_empty_template.html' %}
+  </script>
+
 {% endblock %}

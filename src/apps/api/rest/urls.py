@@ -17,6 +17,11 @@ urlpatterns = [
         name="cart_summary"
     ),
     path(
+        "cart/items/<int:product_id>/",
+        views.CartItemDeleteAPIView.as_view(),
+        name="cart_item_delete"
+    ),
+    path(
         "cart/items/<int:product_id>/increase/",
         views.CartItemIncreaseAPIView.as_view(),
         name="cart_item_increase",

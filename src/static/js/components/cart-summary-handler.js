@@ -26,6 +26,10 @@ class CartSummaryHandler extends BaseComponent {
         this.broadcastManager.subscribe('cart_item_quantity_changed', () => {
             void this.fetchAndRender();
         });
+
+        this.broadcastManager.subscribe('cart_item_removed', () => {
+            void this.fetchAndRender();
+        });
     }
 
     async fetchAndRender() {

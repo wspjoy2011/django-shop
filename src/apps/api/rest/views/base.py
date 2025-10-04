@@ -40,6 +40,9 @@ class APIResponseMixin:
         serializer.is_valid(raise_exception=True)
         return Response(serializer.validated_data, status=status_code)
 
+    def return_no_content(self):
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 class BaseRatingToggleAPIView(APIView, APIResponseMixin, ABC):
     permission_classes = [IsAuthenticated]

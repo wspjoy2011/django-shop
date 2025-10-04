@@ -58,7 +58,7 @@ class CartSummaryAPIView(BaseAPIView):
 class CartItemIncreaseAPIView(BaseAPIView):
     permission_classes = [AllowAny]
 
-    def post(self, request, product_id: int, *args, **kwargs):
+    def post(self, request, product_id: int):
         product = get_object_or_404(Product, pk=product_id)
 
         try:
@@ -95,7 +95,7 @@ class CartItemIncreaseAPIView(BaseAPIView):
 class CartItemDecreaseAPIView(BaseAPIView):
     permission_classes = [AllowAny]
 
-    def post(self, request, product_id: int, *args, **kwargs):
+    def post(self, request, product_id: int):
         product = get_object_or_404(Product, pk=product_id)
 
         try:
@@ -127,3 +127,13 @@ class CartItemDecreaseAPIView(BaseAPIView):
             serializer_class=CartItemDetailSerializer,
             status_code=status.HTTP_200_OK,
         )
+
+
+class CartItemDeleteAPIView(BaseAPIView):
+    permission_classes = [AllowAny]
+
+    def delete(self, request: CartHttpRequest, product_id: int):
+        product = get_object_or_404(Product, pk=product_id)
+        request.cart.remove_product(product)
+
+        return self.return_no_content()
