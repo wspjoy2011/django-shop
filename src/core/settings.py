@@ -82,7 +82,8 @@ INSTALLED_APPS = [
     'apps.catalog',
     'apps.inventories',
     'apps.favorites',
-    'apps.ratings'
+    'apps.ratings',
+    'apps.shipping'
 ]
 
 MIDDLEWARE = [
@@ -124,6 +125,9 @@ TEMPLATES = [
 
                 # Cart summary
                 "apps.cart.context_processors.cart_summary",
+
+                # Shipping (google places api key)
+                "apps.shipping.context_processors.google_places"
             ],
         },
     },
@@ -251,3 +255,7 @@ CART_COOKIE_AGE = int(CART_TOKEN_LIFETIME.total_seconds())
 CART_COOKIE_SECURE = True
 CART_COOKIE_HTTPONLY = True
 CART_COOKIE_SAMESITE = "Lax"
+
+# Google Places API
+
+GOOGLE_PLACES_BROWSER_KEY = os.environ.get('GOOGLE_PLACES_API_KEY', '')
