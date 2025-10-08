@@ -48,6 +48,7 @@ class ShippingAddressHandler extends BaseComponent {
         this.sPlaceId = document.querySelector(this.selectors.sPlaceId);
 
         this.browserKey = this.layout.dataset.gplacesKey;
+        this.mapFrame = document.getElementById('map-frame');
         this.pac = null;
         this.PlaceAutocompleteElement = null;
 
@@ -66,24 +67,20 @@ class ShippingAddressHandler extends BaseComponent {
     }
 
     async loadMapsPlaces() {
-        if (this.PlaceAutocompleteElement) {
-            return;
-        }
+        if (this.PlaceAutocompleteElement) return;
 
-        try {
-            const {Loader} = await import('https://unpkg.com/@googlemaps/js-api-loader@1.16.2/dist/index.esm.js');
+        const {Loader} = await import(
+            'https://unpkg.com/@googlemaps/js-api-loader@1.16.2/dist/index.esm.js'
+            );
 
-            const loader = new Loader({
-                apiKey: this.browserKey,
-                version: "weekly",
-                libraries: ["places"]
-            });
+        const loader = new Loader({
+            apiKey: this.browserKey,
+            version: 'weekly',
+            libraries: ['places']
+        });
 
-            const placesLibrary = await loader.importLibrary('places');
-            this.PlaceAutocompleteElement = placesLibrary.PlaceAutocompleteElement;
-        } catch (error) {
-            throw error;
-        }
+        const placesLibrary = await loader.importLibrary('places');
+        this.PlaceAutocompleteElement = placesLibrary.PlaceAutocompleteElement;
     }
 
     mountAutocomplete() {
@@ -108,7 +105,9 @@ class ShippingAddressHandler extends BaseComponent {
             const prediction = e.placePrediction;
             if (!prediction) return;
             const place = prediction.toPlace();
-            await place.fetchFields({fields: ['formattedAddress', 'addressComponents', 'id']});
+            await place.fetchFields({
+                fields: ['formattedAddress', 'addressComponents', 'id', 'location']
+            });
             this.applyPlace(place);
         });
 
@@ -127,9 +126,7 @@ class ShippingAddressHandler extends BaseComponent {
         const comps = place.addressComponents || [];
 
         for (const c of comps) {
-            for (const t of c.types) {
-                if (!map[t]) map[t] = c;
-            }
+            for (const t of c.types) if (!map[t]) map[t] = c;
         }
 
         const country = map.country ? map.country.shortText : '';
@@ -139,16 +136,15 @@ class ShippingAddressHandler extends BaseComponent {
             (map.locality && map.locality.longText) ||
             (map.postal_town && map.postal_town.longText) ||
             (map.sublocality && map.sublocality.longText) ||
-            (map.administrative_area_level_3 && map.administrative_area_level_3.longText) || '';
+            (map.administrative_area_level_3 && map.administrative_area_level_3.longText) ||
+            '';
 
         const route = map.route ? map.route.longText : '';
         const number = map.street_number ? map.street_number.longText : '';
         const postal = map.postal_code ? map.postal_code.longText : '';
-
         const premise = map.premise ? map.premise.longText : '';
         const subpremise = map.subpremise ? map.subpremise.longText : '';
         const apartment = subpremise || premise;
-
         const region = region1 || region2;
 
         this.placeIdInput.value = place.id || '';
@@ -161,6 +157,37 @@ class ShippingAddressHandler extends BaseComponent {
         this.postalInput.value = postal;
 
         this.updateSummaryFromFields(country);
+        this.renderMapFromPlace(place);
+    }
+
+    renderMapFromPlace(place) {
+        if (!this.mapFrame) return;
+        const key = this.mapFrame.dataset.embedKey || this.browserKey || '';
+        const pid = place && place.id ? place.id : '';
+        const loc = place && place.location ? place.location : null;
+
+        let src = '';
+        if (key && pid) {
+            const q = 'place_id:' + pid;
+            src =
+                'https://www.google.com/maps/embed/v1/place?key=' +
+                encodeURIComponent(key) +
+                '&q=' +
+                encodeURIComponent(q);
+        } else if (key && loc) {
+            const lat = typeof loc.lat === 'function' ? loc.lat() : loc.lat;
+            const lng = typeof loc.lng === 'function' ? loc.lng() : loc.lng;
+            src =
+                'https://www.google.com/maps/embed/v1/view?key=' +
+                encodeURIComponent(key) +
+                '&center=' +
+                lat +
+                ',' +
+                lng +
+                '&zoom=16';
+        }
+
+        if (src) this.mapFrame.src = src;
     }
 
     updateSummaryFromFields(country = '') {

@@ -124,6 +124,16 @@
           </ul>
         </aside>
       </div>
+
+      <div class="address-map mt-5">
+        <iframe id="map-frame"
+                data-embed-key="{{ GOOGLE_PLACES_BROWSER_KEY }}"
+                loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade"
+                allowfullscreen>
+        </iframe>
+      </div>
+
     </div>
   </div>
 {% endblock %}
