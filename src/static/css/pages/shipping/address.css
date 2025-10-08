@@ -102,8 +102,8 @@
 
 .summary-list li {
     display: grid;
-    grid-template-columns: 1fr auto;
-    align-items: center;
+    grid-template-columns: max-content 1fr;
+    align-items: start;
     gap: 12px;
     padding: 10px 12px;
     border-radius: 12px;
@@ -125,11 +125,20 @@
 .summary-list li span:last-child {
     font-weight: 600;
     color: var(--text);
-    max-width: 65%;
+    max-width: none;
+    display: block;
+    width: 100%;
     text-align: right;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    word-break: normal;
+    overflow-wrap: break-word;
+}
+
+#summary-place-id {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    overflow-wrap: anywhere;
 }
 
 .btn.btn-primary {

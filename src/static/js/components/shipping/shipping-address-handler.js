@@ -82,7 +82,6 @@ class ShippingAddressHandler extends BaseComponent {
             const placesLibrary = await loader.importLibrary('places');
             this.PlaceAutocompleteElement = placesLibrary.PlaceAutocompleteElement;
         } catch (error) {
-            console.error('Error loading Places API:', error);
             throw error;
         }
     }
@@ -94,35 +93,26 @@ class ShippingAddressHandler extends BaseComponent {
         }
 
         const countryCode = this.countrySelect.value.toUpperCase();
-
-        this.pac = new this.PlaceAutocompleteElement({
-            includedRegionCodes: [countryCode]
-        });
-
+        this.pac = new this.PlaceAutocompleteElement({includedRegionCodes: [countryCode]});
         this.pac.className = this.addressInput.className;
         this.pac.id = 'g-places-autocomplete';
+        if (this.addressInput.placeholder) {
+            this.pac.setAttribute('placeholder', this.addressInput.placeholder);
+        }
 
         const parent = this.addressInput.parentElement;
         parent.insertBefore(this.pac, this.addressInput);
         this.addressInput.style.display = 'none';
 
-        this.pac.addEventListener('gmp-placeselect', async (event) => {
-            const place = event.place;
-
-            if (!place) {
-                return;
-            }
-
-            try {
-                await place.fetchFields({
-                    fields: ['formattedAddress', 'addressComponents', 'id']
-                });
-
-                this.applyPlace(place);
-            } catch (error) {
-                console.error('Error fetching place details:', error);
-            }
+        this.pac.addEventListener('gmp-select', async (e) => {
+            const prediction = e.placePrediction;
+            if (!prediction) return;
+            const place = prediction.toPlace();
+            await place.fetchFields({fields: ['formattedAddress', 'addressComponents', 'id']});
+            this.applyPlace(place);
         });
+
+        this.pac.addEventListener('gmp-error', (e) => console.error('places widget error:', e));
     }
 
     bindEvents() {
@@ -138,30 +128,36 @@ class ShippingAddressHandler extends BaseComponent {
 
         for (const c of comps) {
             for (const t of c.types) {
-                map[t] = c;
+                if (!map[t]) map[t] = c;
             }
         }
 
         const country = map.country ? map.country.shortText : '';
-        const region1 = map.administrative_area_level_1 ?
-            map.administrative_area_level_1.longText : '';
-        const region2 = map.administrative_area_level_2 ?
-            map.administrative_area_level_2.longText : '';
-
-        const city = (map.locality && map.locality.longText) ||
+        const region1 = map.administrative_area_level_1 ? map.administrative_area_level_1.longText : '';
+        const region2 = map.administrative_area_level_2 ? map.administrative_area_level_2.longText : '';
+        const city =
+            (map.locality && map.locality.longText) ||
             (map.postal_town && map.postal_town.longText) ||
+            (map.sublocality && map.sublocality.longText) ||
             (map.administrative_area_level_3 && map.administrative_area_level_3.longText) || '';
 
         const route = map.route ? map.route.longText : '';
         const number = map.street_number ? map.street_number.longText : '';
         const postal = map.postal_code ? map.postal_code.longText : '';
 
+        const premise = map.premise ? map.premise.longText : '';
+        const subpremise = map.subpremise ? map.subpremise.longText : '';
+        const apartment = subpremise || premise;
+
+        const region = region1 || region2;
+
         this.placeIdInput.value = place.id || '';
         this.addressInput.value = place.formattedAddress || '';
         this.streetInput.value = route;
-        this.houseInput.value = number;
+        this.houseInput.value = number || (premise && !apartment ? premise : '');
+        this.apartmentInput.value = apartment;
         this.cityInput.value = city;
-        this.regionInput.value = region1 || region2;
+        this.regionInput.value = region;
         this.postalInput.value = postal;
 
         this.updateSummaryFromFields(country);
