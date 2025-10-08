@@ -70,6 +70,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     # Pypi third apps
+    'django_countries',
     'django_extensions',
     'django_pgviews',
     'debug_toolbar',
@@ -127,7 +128,11 @@ TEMPLATES = [
                 "apps.cart.context_processors.cart_summary",
 
                 # Shipping (google places api key)
-                "apps.shipping.context_processors.google_places"
+                "apps.shipping.context_processors.google_places",
+
+                # EU countries
+                "apps.shipping.context_processors.eu_countries",
+
             ],
         },
     },

@@ -1,0 +1,178 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;600&display=swap');
+
+:root {
+    --surface: #ffffff;
+    --outline: #e9edf3;
+    --muted: #6b7280;
+    --text: #1f2937;
+    --brand: #4f46e5;
+    --brand-2: #22c55e;
+    --glow: 0 12px 40px rgba(79, 70, 229, .16);
+    --ring: 0 0 0 .25rem rgba(79, 70, 229, .17);
+    --radius-lg: 16px;
+    --radius-md: 12px;
+}
+
+.shipping-hero {
+    background: radial-gradient(1200px 300px at 10% -10%, rgba(79, 70, 229, .08), transparent),
+    linear-gradient(180deg, #f8f9fe 0%, #ffffff 100%);
+    border: 1px solid var(--outline);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--glow);
+}
+
+.shipping-hero .h2 {
+    letter-spacing: .2px;
+}
+
+.shipping-layout {
+    animation: shipFade .32s ease both;
+}
+
+.shipping-form .form-label {
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: .2px;
+}
+
+.shipping-form .form-control,
+.shipping-form .form-select {
+    border-radius: var(--radius-md);
+    border: 1px solid var(--outline);
+    background: var(--surface);
+    transition: box-shadow .16s ease, border-color .16s ease, transform .12s ease;
+    will-change: transform, box-shadow;
+}
+
+.shipping-form .form-control:hover,
+.shipping-form .form-select:hover {
+    transform: translateY(-1px);
+}
+
+.shipping-form .form-control:focus,
+.shipping-form .form-select:focus {
+    border-color: var(--brand);
+    box-shadow: var(--ring);
+}
+
+#address-input {
+    padding-left: 2.6rem;
+    background-image: url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M21 21l-3.5-3.5' stroke='%236b7280' stroke-width='2' stroke-linecap='round'/%3E%3Ccircle cx='11' cy='11' r='7' stroke='%236b7280' stroke-width='2'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: .9rem 50%;
+    background-size: 20px;
+}
+
+#g-places-autocomplete {
+    position: relative;
+    z-index: 100;
+}
+
+.mb-3.position-relative {
+    position: relative !important;
+    z-index: 10;
+}
+
+.shipping-form .row.g-3 {
+    position: relative;
+    z-index: 1;
+}
+
+.address-summary {
+    border: 1px solid var(--outline);
+    border-radius: var(--radius-lg);
+    padding: 18px;
+    background: var(--surface);
+    position: sticky;
+    top: 24px;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, .06);
+}
+
+.address-summary .h5 {
+    letter-spacing: .3px;
+}
+
+.summary-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 10px;
+}
+
+.summary-list li {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #fafbfc 0%, #ffffff 100%);
+    border: 1px solid #f1f3f5;
+    transition: background .18s ease, transform .12s ease, box-shadow .18s ease;
+}
+
+.summary-list li:hover {
+    background: linear-gradient(180deg, #f6f8fb 0%, #ffffff 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 10px 26px rgba(31, 41, 55, .06);
+}
+
+.summary-list li span:first-child {
+    color: var(--muted);
+}
+
+.summary-list li span:last-child {
+    font-weight: 600;
+    color: var(--text);
+    max-width: 65%;
+    text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.btn.btn-primary {
+    border-radius: 999px;
+    transition: transform .12s ease, box-shadow .18s ease, filter .16s ease;
+}
+
+.btn.btn-primary:hover {
+    transform: translateY(-1px);
+    filter: brightness(.98);
+    box-shadow: 0 14px 38px rgba(79, 70, 229, .22);
+}
+
+.btn.btn-primary:active {
+    transform: translateY(0);
+    box-shadow: 0 8px 20px rgba(79, 70, 229, .18);
+}
+
+#country-select,
+#country-select option {
+    font-family: 'Manrope', system-ui, -apple-system, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+    font-weight: 600;
+    font-size: 1.02rem;
+    line-height: 1.5;
+    color: #111827;
+    letter-spacing: .15px;
+}
+
+@keyframes shipFade {
+    from {
+        opacity: 0;
+        transform: translateY(6px)
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0)
+    }
+}
+
+@media (max-width: 992px) {
+    .address-summary {
+        position: static;
+        top: auto;
+    }
+}

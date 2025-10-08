@@ -1,0 +1,129 @@
+{% extends 'layout/base.html' %}
+{% load static %}
+{% load countries %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/pages/shipping/address.css' %}">
+
+{% endblock %}
+
+{% block extra_js %}
+  <script type="module" src="{% static 'js/components/shipping/shipping-address-handler.js' %}" defer></script>
+{% endblock %}
+
+{% block content %}
+
+  <div class="container my-5">
+    <section class="shipping-hero my-4 p-4 p-lg-5">
+      <div class="d-lg-flex align-items-center justify-content-between gap-3">
+        <div>
+          <h1 class="h2 fw-bold mb-2">
+            <i class="fas fa-truck-fast text-primary me-2"></i> Shipping Address
+          </h1>
+          <p class="text-muted mb-0">Select country and find your address.</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="row gx-5 shipping-layout mt-5" id="shipping-layout"
+         data-gplaces-key="{{ GOOGLE_PLACES_BROWSER_KEY }}">
+      <div class="col-12 col-lg-8">
+        <form id="shipping-form" class="shipping-form">
+          <div class="mb-3">
+            <label for="country-select" class="form-label">Country</label>
+            <select id="country-select" class="form-select">
+              {% get_countries as countries %}
+              {% for country in countries %}
+                {% if country.code in EU_COUNTRY_CODES %}
+                  <option value="{{ country.code }}">{{ country.name }}</option>
+                {% endif %}
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="mb-3 position-relative">
+            <label for="address-input" class="form-label">Address</label>
+            <input id="address-input" type="text" class="form-control"
+                   placeholder="Start typing address" autocomplete="off">
+          </div>
+
+          <div class="row g-3">
+            <div class="col-12 col-md-6">
+              <label for="address-street" class="form-label">Street</label>
+              <input id="address-street" type="text" class="form-control">
+            </div>
+            <div class="col-6 col-md-3">
+              <label for="address-house" class="form-label">House</label>
+              <input id="address-house" type="text" class="form-control">
+            </div>
+            <div class="col-6 col-md-3">
+              <label for="address-apartment" class="form-label">Apartment</label>
+              <input id="address-apartment" type="text" class="form-control">
+            </div>
+
+            <div class="col-12 col-md-4">
+              <label for="address-city" class="form-label">City</label>
+              <input id="address-city" type="text" class="form-control">
+            </div>
+            <div class="col-12 col-md-4">
+              <label for="address-region" class="form-label">Region/State</label>
+              <input id="address-region" type="text" class="form-control">
+            </div>
+            <div class="col-12 col-md-4">
+              <label for="address-postal" class="form-label">Postal code</label>
+              <input id="address-postal" type="text" class="form-control">
+            </div>
+          </div>
+
+          <input id="address-place-id" type="hidden">
+        </form>
+      </div>
+
+      <div class="col-12 col-lg-4">
+        <aside class="address-summary" id="address-summary">
+          <h2 class="h5 fw-bold mb-3">
+            <i class="fas fa-receipt me-2"></i> Address Summary
+          </h2>
+          <ul class="summary-list">
+            <li>
+              <span>Formatted</span>
+              <span id="summary-formatted"></span>
+            </li>
+            <li>
+              <span>Country</span>
+              <span id="summary-country"></span>
+            </li>
+            <li>
+              <span>Region</span>
+              <span id="summary-region"></span>
+            </li>
+            <li>
+              <span>City</span>
+              <span id="summary-city"></span>
+            </li>
+            <li>
+              <span>Postal</span>
+              <span id="summary-postal"></span>
+            </li>
+            <li>
+              <span>Street</span>
+              <span id="summary-street"></span>
+            </li>
+            <li>
+              <span>House</span>
+              <span id="summary-house"></span>
+            </li>
+            <li>
+              <span>Apartment</span>
+              <span id="summary-apartment"></span>
+            </li>
+            <li>
+              <span>Place ID</span>
+              <span id="summary-place-id"></span>
+            </li>
+          </ul>
+        </aside>
+      </div>
+    </div>
+  </div>
+{% endblock %}

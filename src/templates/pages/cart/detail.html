@@ -193,9 +193,11 @@
               </ul>
             {% endwith %}
 
-            <button class="btn btn-primary w-100 rounded-pill mt-2" disabled>
+            <a href="{% url 'shipping:address' %}"
+               class="btn btn-primary w-100 rounded-pill mt-2 d-block"
+               aria-disabled="true" tabindex="-1">
               Continue to checkout
-            </button>
+            </a>
 
             <p class="text-muted small mt-2 mb-0">
               Taxes and shipping will be calculated at checkout.
