@@ -1,4 +1,5 @@
 import {BaseComponent} from '../../utils/components/BaseComponent.js';
+import {MessageManager} from '../../utils/components/MessageManager.js';
 
 class ShippingAddressHandler extends BaseComponent {
     constructor() {
@@ -61,6 +62,7 @@ class ShippingAddressHandler extends BaseComponent {
         this.bindFieldMirrors();
         this.bindEvents();
         this.updateSummary();
+        this.hideMap();
     }
 
     setupBroadcastSubscriptions() {
@@ -106,7 +108,7 @@ class ShippingAddressHandler extends BaseComponent {
             if (!prediction) return;
             const place = prediction.toPlace();
             await place.fetchFields({
-                fields: ['formattedAddress', 'addressComponents', 'id', 'location']
+                fields: ['formattedAddress', 'addressComponents', 'id', 'location', 'types']
             });
             this.applyPlace(place);
         });
@@ -124,10 +126,7 @@ class ShippingAddressHandler extends BaseComponent {
     applyPlace(place) {
         const map = {};
         const comps = place.addressComponents || [];
-
-        for (const c of comps) {
-            for (const t of c.types) if (!map[t]) map[t] = c;
-        }
+        for (const c of comps) for (const t of c.types) if (!map[t]) map[t] = c;
 
         const country = map.country ? map.country.shortText : '';
         const region1 = map.administrative_area_level_1 ? map.administrative_area_level_1.longText : '';
@@ -136,8 +135,7 @@ class ShippingAddressHandler extends BaseComponent {
             (map.locality && map.locality.longText) ||
             (map.postal_town && map.postal_town.longText) ||
             (map.sublocality && map.sublocality.longText) ||
-            (map.administrative_area_level_3 && map.administrative_area_level_3.longText) ||
-            '';
+            (map.administrative_area_level_3 && map.administrative_area_level_3.longText) || '';
 
         const route = map.route ? map.route.longText : '';
         const number = map.street_number ? map.street_number.longText : '';
@@ -147,27 +145,54 @@ class ShippingAddressHandler extends BaseComponent {
         const apartment = subpremise || premise;
         const region = region1 || region2;
 
+        const userHouse = this.houseInput.value.trim();
+
         this.placeIdInput.value = place.id || '';
         this.addressInput.value = place.formattedAddress || '';
         this.streetInput.value = route;
-        this.houseInput.value = number || (premise && !apartment ? premise : '');
+        this.houseInput.value = number || (premise && !apartment ? premise : userHouse);
         this.apartmentInput.value = apartment;
         this.cityInput.value = city;
         this.regionInput.value = region;
         this.postalInput.value = postal;
 
+        const hasStreet = !!route;
+        const hasHouse = !!number;
+        const hasCity = !!city;
+        const hasRegion = !!region;
+        const houseMatches = userHouse ? userHouse === number : true;
+
+        const flags = {
+            street: !hasStreet,
+            house: !hasHouse || !houseMatches,
+            city: !hasCity,
+            region: !hasRegion
+        };
+
+        const messages = [];
+        if (!hasStreet) messages.push('Enter street');
+        if (!hasHouse) messages.push('Enter house number');
+        if (hasHouse && !houseMatches) messages.push('House number does not match the selected address');
+        if (!hasCity) messages.push('Enter city');
+        if (!hasRegion) messages.push('Enter region/state');
+
+        this.markInvalidFields(flags, messages);
+
+        const verified = hasStreet && hasHouse && hasCity && hasRegion && houseMatches;
         this.updateSummaryFromFields(country);
-        this.renderMapFromPlace(place);
+        this.renderMapFromPlace(place, verified);
     }
 
-    renderMapFromPlace(place) {
+
+    renderMapFromPlace(place, verified) {
         if (!this.mapFrame) return;
         const key = this.mapFrame.dataset.embedKey || this.browserKey || '';
         const pid = place && place.id ? place.id : '';
         const loc = place && place.location ? place.location : null;
 
         let src = '';
-        if (key && pid) {
+
+        if (key && verified && pid) {
             const q = 'place_id:' + pid;
             src =
                 'https://www.google.com/maps/embed/v1/place?key=' +
@@ -187,7 +212,55 @@ class ShippingAddressHandler extends BaseComponent {
                 '&zoom=16';
         }
 
-        if (src) this.mapFrame.src = src;
+        if (src) {
+            this.mapFrame.src = src;
+            this.showMap();
+        }
+    }
+
+    markInvalidFields(flags, messages) {
+        this.clearAllInvalid();
+        if (flags.street) this.setInvalid(this.streetInput, 'Invalid street', true);
+        if (flags.house) this.setInvalid(this.houseInput, 'Invalid house number', true, true);
+        if (flags.city) this.setInvalid(this.cityInput, 'Invalid city', true);
+        if (flags.region) this.setInvalid(this.regionInput, 'Invalid region/state', true);
+        if (messages && messages.length) {
+            MessageManager.showGlobalMessage(messages.join('. ') + '.', 'warning');
+        }
+    }
+
+    setInvalid(input, message, silent = false, clearValue = false) {
+        input.classList.add('is-invalid');
+        if (clearValue) input.value = '';
+        if (typeof input.setCustomValidity === 'function') {
+            input.setCustomValidity(message || 'Invalid');
+        }
+        if (!silent) MessageManager.showGlobalMessage(message || 'Invalid address field', 'warning');
+        if (typeof input.reportValidity === 'function') input.reportValidity();
+    }
+
+    clearInvalid(input) {
+        input.classList.remove('is-invalid');
+        if (typeof input.setCustomValidity === 'function') input.setCustomValidity('');
+    }
+
+    clearAllInvalid() {
+        this.clearInvalid(this.streetInput);
+        this.clearInvalid(this.houseInput);
+        this.clearInvalid(this.cityInput);
+        this.clearInvalid(this.regionInput);
+        this.clearInvalid(this.postalInput);
+    }
+
+    hideMap() {
+        if (!this.mapFrame) return;
+        this.mapFrame.removeAttribute('src');
+        this.mapFrame.style.display = 'none';
+    }
+
+    showMap() {
+        if (!this.mapFrame) return;
+        this.mapFrame.style.display = '';
     }
 
     updateSummaryFromFields(country = '') {
@@ -226,7 +299,9 @@ class ShippingAddressHandler extends BaseComponent {
         this.regionInput.value = '';
         this.postalInput.value = '';
         this.placeIdInput.value = '';
+        this.clearAllInvalid();
         this.updateSummary();
+        this.hideMap();
     }
 
     updateSummary() {

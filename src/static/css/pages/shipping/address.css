@@ -78,6 +78,16 @@
     z-index: 1;
 }
 
+.shipping-form .form-control.is-invalid {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 .25rem rgba(239, 68, 68, .18);
+}
+
+.shipping-form .form-control.is-invalid:focus {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 .25rem rgba(239, 68, 68, .26);
+}
+
 .address-summary {
     border: 1px solid var(--outline);
     border-radius: var(--radius-lg);
@@ -169,11 +179,11 @@
 }
 
 .address-map iframe {
-  width: 100%;
-  height: 300px;
-  border: 0;
-  border-radius: var(--radius-lg);
-  box-shadow: var(--glow);
+    width: 100%;
+    height: 300px;
+    border: 0;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--glow);
 }
 
 
