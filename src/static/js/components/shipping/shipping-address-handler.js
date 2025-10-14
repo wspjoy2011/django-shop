@@ -24,7 +24,12 @@ class ShippingAddressHandler extends BaseComponent {
             sStreet: '#summary-street',
             sHouse: '#summary-house',
             sApartment: '#summary-apartment',
-            sPlaceId: '#summary-place-id'
+            sPlaceId: '#summary-place-id',
+            lat: '#address-lat',
+            lng: '#address-lng',
+            flagImg: '.country-select-flag',
+            submit: '#address-submit',
+            isValid: '#id_is_valid'
         };
 
         this.layout = document.querySelector(this.selectors.layout);
@@ -47,6 +52,12 @@ class ShippingAddressHandler extends BaseComponent {
         this.sHouse = document.querySelector(this.selectors.sHouse);
         this.sApartment = document.querySelector(this.selectors.sApartment);
         this.sPlaceId = document.querySelector(this.selectors.sPlaceId);
+        this.latInput = document.querySelector(this.selectors.lat);
+        this.lngInput = document.querySelector(this.selectors.lng);
+        this.flagImg = document.querySelector(this.selectors.flagImg);
+
+        this.submitBtn = document.querySelector(this.selectors.submit);
+        this.isValidInput = document.querySelector(this.selectors.isValid);
 
         this.browserKey = this.layout.dataset.gplacesKey;
         this.mapFrame = document.getElementById('map-frame');
@@ -61,8 +72,10 @@ class ShippingAddressHandler extends BaseComponent {
         this.mountAutocomplete();
         this.bindFieldMirrors();
         this.bindEvents();
+        this.updateCountryFlagFromSelect();
         this.updateSummary();
         this.hideMap();
+        this.setFormValidity(false);
     }
 
     setupBroadcastSubscriptions() {
@@ -118,6 +131,7 @@ class ShippingAddressHandler extends BaseComponent {
 
     bindEvents() {
         this.countrySelect.addEventListener('change', () => {
+            this.updateCountryFlagFromSelect();
             this.mountAutocomplete();
             this.resetAddressFields();
         });
@@ -156,6 +170,20 @@ class ShippingAddressHandler extends BaseComponent {
         this.regionInput.value = region;
         this.postalInput.value = postal;
 
+        if (place.location && this.latInput && this.lngInput) {
+            const latVal = typeof place.location.lat === 'function'
+                ? place.location.lat()
+                : place.location.lat;
+            const lngVal = typeof place.location.lng === 'function'
+                ? place.location.lng()
+                : place.location.lng;
+            this.latInput.value = latVal;
+            this.lngInput.value = lngVal;
+        } else {
+            if (this.latInput) this.latInput.value = '';
+            if (this.lngInput) this.lngInput.value = '';
+        }
+
         const hasStreet = !!route;
         const hasHouse = !!number;
         const hasCity = !!city;
@@ -172,7 +200,9 @@ class ShippingAddressHandler extends BaseComponent {
         const messages = [];
         if (!hasStreet) messages.push('Enter street');
         if (!hasHouse) messages.push('Enter house number');
-        if (hasHouse && !houseMatches) messages.push('House number does not match the selected address');
+        if (hasHouse && !houseMatches) {
+            messages.push('House number does not match the selected address');
+        }
         if (!hasCity) messages.push('Enter city');
         if (!hasRegion) messages.push('Enter region/state');
 
@@ -181,8 +211,8 @@ class ShippingAddressHandler extends BaseComponent {
         const verified = hasStreet && hasHouse && hasCity && hasRegion && houseMatches;
         this.updateSummaryFromFields(country);
         this.renderMapFromPlace(place, verified);
+        this.setFormValidity(verified);
     }
-
 
     renderMapFromPlace(place, verified) {
         if (!this.mapFrame) return;
@@ -227,6 +257,7 @@ class ShippingAddressHandler extends BaseComponent {
         if (messages && messages.length) {
             MessageManager.showGlobalMessage(messages.join('. ') + '.', 'warning');
         }
+        this.setFormValidity(false);
     }
 
     setInvalid(input, message, silent = false, clearValue = false) {
@@ -254,13 +285,18 @@ class ShippingAddressHandler extends BaseComponent {
 
     hideMap() {
         if (!this.mapFrame) return;
+        this.mapFrame.hidden = true;
         this.mapFrame.removeAttribute('src');
-        this.mapFrame.style.display = 'none';
     }
 
     showMap() {
         if (!this.mapFrame) return;
-        this.mapFrame.style.display = '';
+        this.mapFrame.hidden = false;
+    }
+
+    setFormValidity(verified) {
+        if (this.submitBtn) this.submitBtn.disabled = !verified;
+        if (this.isValidInput) this.isValidInput.value = verified ? 'true' : 'false';
     }
 
     updateSummaryFromFields(country = '') {
@@ -288,6 +324,10 @@ class ShippingAddressHandler extends BaseComponent {
         mirror(this.cityInput, this.sCity);
         mirror(this.regionInput, this.sRegion);
         mirror(this.postalInput, this.sPostal);
+
+        const invalidate = () => this.setFormValidity(false);
+        [this.streetInput, this.houseInput, this.cityInput, this.regionInput, this.postalInput]
+            .forEach((el) => el && el.addEventListener('input', invalidate));
     }
 
     resetAddressFields() {
@@ -299,9 +339,13 @@ class ShippingAddressHandler extends BaseComponent {
         this.regionInput.value = '';
         this.postalInput.value = '';
         this.placeIdInput.value = '';
+        if (this.latInput) this.latInput.value = '';
+        if (this.lngInput) this.lngInput.value = '';
+
         this.clearAllInvalid();
         this.updateSummary();
         this.hideMap();
+        this.setFormValidity(false);
     }
 
     updateSummary() {
@@ -314,6 +358,29 @@ class ShippingAddressHandler extends BaseComponent {
         this.sHouse.textContent = this.houseInput.value || '';
         this.sApartment.textContent = this.apartmentInput.value || '';
         this.sPlaceId.textContent = this.placeIdInput.value || '';
+    }
+
+    updateCountryFlagFromSelect() {
+        if (!this.flagImg || !this.countrySelect) return;
+
+        const basePath = '/static/flags/';
+        const placeholder = basePath + '__.gif';
+
+        const rawCode = (this.countrySelect.value || '').trim();
+        const code = rawCode ? rawCode.toLowerCase() : '';
+
+        const nextSrc = code ? basePath + code + '.gif' : placeholder;
+
+        this.flagImg.onerror = () => {
+            this.flagImg.onerror = null;
+            this.flagImg.src = placeholder;
+        };
+
+        this.flagImg.src = nextSrc;
+        this.flagImg.alt = code ? `Flag ${rawCode}` : 'No flag';
+        this.flagImg.title = this.countrySelect.options[
+            this.countrySelect.selectedIndex
+            ]?.text || '';
     }
 }
 

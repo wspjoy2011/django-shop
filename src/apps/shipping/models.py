@@ -1,11 +1,15 @@
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.db import models
 from django.db.models import Q
+from django_countries.fields import CountryField
+
+User = get_user_model()
 
 
 class Address(models.Model):
     formatted = models.CharField(max_length=512)
-    country = models.CharField(max_length=2)
+    country = CountryField()
     region = models.CharField(max_length=128)
     city = models.CharField(max_length=128)
     postal_code = models.CharField(max_length=32)
@@ -13,12 +17,12 @@ class Address(models.Model):
     house = models.CharField(max_length=32)
     apartment = models.CharField(max_length=32, blank=True)
     place_id = models.CharField(max_length=128, unique=True)
-    lat = models.DecimalField(max_digits=9, decimal_places=6)
-    lng = models.DecimalField(max_digits=9, decimal_places=6)
+    lat = models.DecimalField(max_digits=9, decimal_places=7)
+    lng = models.DecimalField(max_digits=9, decimal_places=7)
     created_at = models.DateTimeField(auto_now_add=True)
 
     users = models.ManyToManyField(
-        settings.AUTH_USER_MODEL,
+        User,
         through='UserAddress',
         related_name='addresses',
     )

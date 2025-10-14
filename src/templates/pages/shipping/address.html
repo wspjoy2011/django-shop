@@ -1,10 +1,10 @@
 {% extends 'layout/base.html' %}
 {% load static %}
 {% load countries %}
+{% load forms_extras %}
 
 {% block extra_css %}
   <link rel="stylesheet" href="{% static 'css/pages/shipping/address.css' %}">
-
 {% endblock %}
 
 {% block extra_js %}
@@ -28,55 +28,87 @@
     <div class="row gx-5 shipping-layout mt-5" id="shipping-layout"
          data-gplaces-key="{{ GOOGLE_PLACES_BROWSER_KEY }}">
       <div class="col-12 col-lg-8">
-        <form id="shipping-form" class="shipping-form">
+        <form id="shipping-form" class="shipping-form" method="post" action="">
+          {% csrf_token %}
+
+          {% non_field_errors form "Form error" %}
+
+          <div class="col-12 col-md-8 mb-3">
+            <label for="address-label" class="form-label">Label</label>
+            {{ form.label }}
+            {% field_errors form.label show_icon=True %}
+          </div>
+
+          <div class="col-12 col-md-4 mb-3">
+            <div class="form-check">
+              {{ form.is_default }}
+              <label class="form-check-label ms-2" for="address-default"><small>default</small></label>
+            </div>
+            {% field_errors form.is_default show_icon=True %}
+          </div>
+
           <div class="mb-3">
             <label for="country-select" class="form-label">Country</label>
-            <select id="country-select" class="form-select">
-              {% get_countries as countries %}
-              {% for country in countries %}
-                {% if country.code in EU_COUNTRY_CODES %}
-                  <option value="{{ country.code }}">{{ country.name }}</option>
-                {% endif %}
-              {% endfor %}
-            </select>
+            {{ form.country }}
+            {% field_errors form.country show_icon=True %}
           </div>
 
           <div class="mb-3 position-relative">
             <label for="address-input" class="form-label">Address</label>
-            <input id="address-input" type="text" class="form-control"
-                   placeholder="Start typing address" autocomplete="off">
+            {{ form.formatted }}
+            {% field_errors form.formatted show_icon=True %}
           </div>
 
           <div class="row g-3">
             <div class="col-12 col-md-6">
               <label for="address-street" class="form-label">Street</label>
-              <input id="address-street" type="text" class="form-control">
+              {{ form.street }}
+              {% field_errors form.street show_icon=True %}
             </div>
+
             <div class="col-6 col-md-3">
               <label for="address-house" class="form-label">House</label>
-              <input id="address-house" type="text" class="form-control">
+              {{ form.house }}
+              {% field_errors form.house show_icon=True %}
             </div>
+
             <div class="col-6 col-md-3">
               <label for="address-apartment" class="form-label">Apartment</label>
-              <input id="address-apartment" type="text" class="form-control">
+              {{ form.apartment }}
+              {% field_errors form.apartment show_icon=True %}
             </div>
 
             <div class="col-12 col-md-4">
               <label for="address-city" class="form-label">City</label>
-              <input id="address-city" type="text" class="form-control">
+              {{ form.city }}
+              {% field_errors form.city show_icon=True %}
             </div>
+
             <div class="col-12 col-md-4">
               <label for="address-region" class="form-label">Region/State</label>
-              <input id="address-region" type="text" class="form-control">
+              {{ form.region }}
+              {% field_errors form.region show_icon=True %}
             </div>
+
             <div class="col-12 col-md-4">
               <label for="address-postal" class="form-label">Postal code</label>
-              <input id="address-postal" type="text" class="form-control">
+              {{ form.postal_code }}
+              {% field_errors form.postal_code show_icon=True %}
             </div>
           </div>
 
-          <input id="address-place-id" type="hidden">
+          {{ form.place_id }}{{ form.lat }}{{ form.lng }}{{ form.is_valid }}
+
+          {% field_errors form.place_id show_icon=True %}
+          {% field_errors form.lat show_icon=True %}
+          {% field_errors form.lng show_icon=True %}
+          {% field_errors form.is_valid show_icon=True %}
+
+          <button id="address-submit" type="submit" class="btn btn-primary mt-4" disabled>
+            Save address
+          </button>
         </form>
+
       </div>
 
       <div class="col-12 col-lg-4">
@@ -127,6 +159,7 @@
 
       <div class="address-map mt-5">
         <iframe id="map-frame"
+                hidden
                 data-embed-key="{{ GOOGLE_PLACES_BROWSER_KEY }}"
                 loading="lazy"
                 referrerpolicy="no-referrer-when-downgrade"
