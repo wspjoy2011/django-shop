@@ -3,13 +3,22 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction, IntegrityError
 from django.shortcuts import render, redirect
 from django.views import View
+from django.views.generic import ListView
 
 from .forms import AddressModelForm
 from .models import UserAddress
 
 
-class AddressView(LoginRequiredMixin, View):
-    template_name = "pages/shipping/address.html"
+class AddressDispatchView(LoginRequiredMixin, View):
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.addresses.exists():
+            return redirect("shipping:address_list")
+
+        return redirect("shipping:address_create")
+
+
+class AddressCreateView(LoginRequiredMixin, View):
+    template_name = "pages/shipping/address/create.html"
     form_class = AddressModelForm
 
     def get(self, request, *args, **kwargs):
@@ -57,4 +66,13 @@ class AddressView(LoginRequiredMixin, View):
             user_address.save(update_fields=fields_to_update)
 
         messages.success(request, "Address has been added.")
-        return redirect(request.path)
+        return redirect("shipping:address_list")
+
+
+class AddressListView(LoginRequiredMixin, ListView):
+    model = UserAddress
+    template_name = "pages/shipping/address/list.html"
+    context_object_name = "user_addresses"
+
+    def get_queryset(self):
+        return UserAddress.objects.select_related('address').filter(user=self.request.user)

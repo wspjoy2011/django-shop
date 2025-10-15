@@ -56,6 +56,7 @@ class UserAddress(models.Model):
 
     class Meta:
         unique_together = [('user', 'address')]
+        ordering = ['-is_default', '-created_at']
         indexes = [
             models.Index(fields=['user', 'is_default']),
             models.Index(fields=['user', 'is_validated']),

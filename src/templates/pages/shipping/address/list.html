@@ -1,0 +1,68 @@
+{% extends 'layout/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/pages/shipping/address-list.css' %}">
+{% endblock %}
+
+{% block content %}
+  <div class="container my-5">
+    <section class="shipping-hero my-4 p-4 p-lg-5">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+          <h1 class="h2 fw-bold mb-2">
+            <i class="fas fa-map-marked-alt text-primary me-2"></i> My Shipping Addresses
+          </h1>
+          <p class="text-muted mb-0">Manage your saved addresses for faster checkout.</p>
+        </div>
+        <a href="{% url 'shipping:address_create' %}" class="btn-add-new">
+          <i class="fas fa-plus me-2"></i> Add New Address
+        </a>
+      </div>
+    </section>
+
+    {% if user_addresses %}
+      <div class="address-list-container mt-5">
+        {% for user_address in user_addresses %}
+          <div class="address-card {% if user_address.is_default %}is-default{% endif %}">
+            <div class="card-body">
+              {% if user_address.is_default %}
+                <span class="badge default-badge">Default</span>
+              {% endif %}
+              <h5 class="card-title">
+                <i class="fas fa-tag fa-fw me-2 text-muted"></i>
+                <span>{{ user_address.label }}</span>
+              </h5>
+              <p class="card-text text-muted">
+                <i class="fas fa-map-marker-alt fa-fw me-2"></i>
+                <span>{{ user_address.address.formatted }}</span>
+              </p>
+
+              <div class="address-actions">
+                <a href="#" class="btn btn-sm btn-icon btn-outline-secondary" title="Edit">
+                  <i class="fas fa-pencil-alt"></i>
+                </a>
+                <a href="#" class="btn btn-sm btn-icon btn-outline-danger" title="Delete">
+                  <i class="fas fa-trash-can"></i>
+                </a>
+                {% if not user_address.is_default %}
+                  <a href="#" class="btn btn-sm btn-primary ms-auto">Set as Default</a>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state-card text-center">
+        <div class="empty-state-icon"><i class="fas fa-map-location-dot"></i></div>
+        <h3 class="h4">No addresses found</h3>
+        <p class="text-muted">You haven't added any shipping addresses yet.</p>
+        <a href="{% url 'shipping:address_create' %}" class="btn-add-new mt-3">
+          <i class="fas fa-plus me-2"></i> Add Your First Address
+        </a>
+      </div>
+    {% endif %}
+
+  </div>
+{% endblock %}

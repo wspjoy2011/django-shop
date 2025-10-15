@@ -1,0 +1,204 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700&display=swap');
+
+:root {
+    --surface: #ffffff;
+    --outline: #e9edf3;
+    --muted: #6b7280;
+    --text: #1f2937;
+    --brand: #4f46e5;
+    --glow: 0 12px 40px rgba(79, 70, 229, .16);
+    --radius-lg: 16px;
+}
+
+.shipping-hero {
+    background: radial-gradient(1200px 300px at 10% -10%, rgba(79, 70, 229, .08), transparent),
+    linear-gradient(180deg, #f8f9fe 0%, #ffffff 100%);
+    border: 1px solid var(--outline);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--glow);
+    font-family: 'Manrope', sans-serif;
+}
+
+.shipping-hero .h2 {
+    letter-spacing: .2px;
+}
+
+@keyframes card-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.address-list-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 1.75rem;
+}
+
+.address-card {
+    border: 1px solid var(--outline);
+    border-radius: var(--radius-lg);
+    transition: all .25s ease;
+    position: relative;
+    background-color: var(--surface);
+    font-family: 'Manrope', sans-serif;
+    animation: card-fade-in .5s ease-out both;
+    display: flex;
+    flex-direction: column;
+}
+
+.address-card:nth-child(1) {
+    animation-delay: 0.05s;
+}
+
+.address-card:nth-child(2) {
+    animation-delay: 0.10s;
+}
+
+.address-card:nth-child(3) {
+    animation-delay: 0.15s;
+}
+
+.address-card:nth-child(4) {
+    animation-delay: 0.20s;
+}
+
+
+.address-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 18px 50px rgba(31, 41, 55, .1);
+}
+
+.address-card.is-default {
+    border-left: 5px solid var(--brand);
+    box-shadow: var(--glow);
+}
+
+.address-card .card-body {
+    padding: 1.25rem 1.5rem;
+    position: relative;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.address-card .default-badge {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    font-size: .8rem;
+    font-weight: 600;
+    padding: .4em .8em;
+    border-radius: 999px;
+    background-color: var(--brand);
+    color: #fff;
+    letter-spacing: .3px;
+}
+
+.address-card .card-title {
+    font-weight: 700;
+    color: var(--text);
+    padding-right: 5rem;
+    display: flex;
+    align-items: center;
+}
+
+.address-card .card-text {
+    color: var(--muted);
+    line-height: 1.6;
+    margin-top: .5rem;
+    display: flex;
+    align-items: flex-start;
+    flex-grow: 1;
+}
+
+.address-card .address-actions {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--outline);
+    display: flex;
+    gap: .5rem;
+    align-items: center;
+    opacity: 0.6;
+    transition: opacity .2s ease;
+}
+
+.address-card:hover .address-actions {
+    opacity: 1;
+}
+
+.address-actions .btn {
+    border-radius: 999px;
+    font-weight: 600;
+    transition: all .15s ease;
+    padding: .375rem .75rem;
+}
+
+.address-actions .btn-icon {
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.address-actions .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, .1);
+}
+
+.empty-state-card {
+    background: var(--surface);
+    border: 1px dashed var(--outline);
+    border-radius: var(--radius-lg);
+    padding: 4rem 2rem;
+    font-family: 'Manrope', sans-serif;
+    margin-top: 2rem;
+    text-align: center;
+}
+
+.empty-state-icon {
+    font-size: 3rem;
+    color: var(--brand);
+    opacity: .5;
+    margin-bottom: 1.5rem;
+}
+
+.empty-state-card .h4 {
+    font-weight: 700;
+    color: var(--text);
+}
+
+.btn-add-new {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.75rem 1.75rem;
+    border-radius: 999px;
+    border: none;
+    font-family: 'Manrope', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    color: #fff;
+    text-decoration: none;
+    background-image: linear-gradient(45deg, #6d28d9 0%, #4f46e5 100%);
+    box-shadow: 0 4px 20px rgba(79, 70, 229, .25), 0 2px 5px rgba(79, 70, 229, .2);
+    transition: all 0.25s ease-out;
+}
+
+.btn-add-new:hover {
+    color: #fff;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 30px rgba(79, 70, 229, .35), 0 4px 10px rgba(79, 70, 229, .25);
+}
+
+.btn-add-new:active {
+    transform: translateY(0);
+    box-shadow: 0 4px 15px rgba(79, 70, 229, .2), 0 2px 5px rgba(79, 70, 229, .15);
+}
