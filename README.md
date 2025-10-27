@@ -2,14 +2,16 @@
 
 A comprehensive e-commerce platform built with Django, featuring a robust set of functionalities from product catalog management to a complete checkout process. This project is fully containerized using Docker for easy setup and deployment.
 
-<p align="center">
-  <a href="#-features">Features</a> ·
-  <a href="#-tech-stack">Tech Stack</a> ·
-  <a href="#-getting-started">Getting Started</a> ·
-  <a href="#-available-commands">Commands</a> ·
-  <a href="#-project-structure">Project Structure</a> ·
-  <a href="#-license">License</a>
-</p>
+## Table of Contents
+- [Features](#-features)
+- [Tech Stack](#-tech-stack)
+- [Getting Started](#-getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Configuration](#configuration)
+  - [Installation & Launch](#installation--launch)
+- [Available Commands](#-available-commands)
+- [Project Structure](#-project-structure)
+- [License](#-license)
 
 ---
 
