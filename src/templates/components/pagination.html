@@ -28,7 +28,7 @@
       {% for num in items.paginator.page_range %}
         {% if items.number == num %}
           <li class="page-item active">
-            <span class="page-link" id="pg-current">{{ num }}</span> {# ← текущая страница #}
+            <span class="page-link" id="pg-current">{{ num }}</span>
           </li>
         {% elif num > items.number|add:'-3' and num < items.number|add:'3' %}
           <li class="page-item">
