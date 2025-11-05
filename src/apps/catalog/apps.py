@@ -5,5 +5,5 @@ class CatalogConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'apps.catalog'
 
-    def ready(self):
+    def ready(self) -> None:
         from . import pgviews

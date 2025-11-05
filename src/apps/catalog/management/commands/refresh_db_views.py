@@ -1,14 +1,30 @@
+"""Management command to refresh all PostgreSQL materialized views."""
+
+from typing import Any
+
 from django.core.management.base import BaseCommand
 from django.db import OperationalError, DatabaseError
 
 from apps.catalog.pgviews import PriceRangesMV, GenderFilterOptionsMV
+from apps.catalog.protocols import MaterializedViewModel
 
 
 class Command(BaseCommand):
+    """Refresh all materialized PostgreSQL views defined in the project."""
+
     help = "Refreshes all materialized views in the project."
 
-    def handle(self, *args, **options):
-        views_to_refresh = [PriceRangesMV, GenderFilterOptionsMV]
+    def handle(self, *args: Any, **options: Any) -> None:
+        """Execute the command.
+
+        Args:
+            *args: Positional arguments passed by the management command runner.
+            **options: Parsed command-line options.
+        """
+        views_to_refresh: list[type[MaterializedViewModel]] = [
+            PriceRangesMV,
+            GenderFilterOptionsMV,
+        ]
 
         self.stdout.write(
             self.style.NOTICE(f"Attempting to refresh {len(views_to_refresh)} materialized view(s)...")

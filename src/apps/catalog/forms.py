@@ -1,4 +1,5 @@
 import json
+from typing import Any
 
 from django import forms
 from django.db.models import Max
@@ -8,6 +9,14 @@ from .models import Product, ArticleType, SubCategory, MasterCategory
 
 
 class ProductForm(forms.ModelForm):
+    """
+    Form for creating or updating Product instances.
+
+    Provides prepopulated product IDs, consistent field styling,
+    and dynamic linkage between ArticleType, SubCategory,
+    and MasterCategory via data attributes for frontend use.
+    """
+
     master_category_display = forms.CharField(
         label="Master category",
         required=False,
@@ -60,13 +69,20 @@ class ProductForm(forms.ModelForm):
             "image_url": forms.URLInput(attrs={"class": "form-control"}),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """
+        Initialize form with default product ID, styled fields,
+        and category display values if available.
+        """
         super().__init__(*args, **kwargs)
         self._set_initial_product_id()
         self._set_field_styles()
         self._set_category_fields()
 
-    def _set_initial_product_id(self):
+    def _set_initial_product_id(self) -> None:
+        """
+        Populate the next available product_id for new products.
+        """
         is_new_product = not self.instance.pk
         is_form_unbound = not hasattr(self, "data") or self.data.get("product_id") is None
 
@@ -75,12 +91,19 @@ class ProductForm(forms.ModelForm):
             self.fields["product_id"].initial = max_pid + 1
             self.fields["product_id"].widget.attrs["min"] = max(1, max_pid + 1)
 
-    def _set_field_styles(self):
+    def _set_field_styles(self) -> None:
+        """
+        Apply consistent Bootstrap-style classes across form widgets.
+        """
         for name, field in self.fields.items():
             css_class = "form-select" if isinstance(field.widget, forms.Select) else "form-control"
             field.widget.attrs.setdefault("class", css_class)
 
-    def _set_category_fields(self):
+    def _set_category_fields(self) -> None:
+        """
+        Map article types to their parent categories and
+        populate hidden display fields for the form.
+        """
         article_types = ArticleType.objects.select_related("sub_category__master_category").all()
         article_map = {
             str(article_type.pk): {
@@ -104,6 +127,10 @@ class ProductForm(forms.ModelForm):
 
 
 class MasterCategoryForm(CategoryFormMixin, forms.ModelForm):
+    """
+    Form for creating or updating MasterCategory entities.
+    """
+
     class Meta:
         model = MasterCategory
         fields = ['name']
@@ -116,6 +143,11 @@ class MasterCategoryForm(CategoryFormMixin, forms.ModelForm):
 
 
 class SubCategoryForm(CategoryFormMixin, forms.ModelForm):
+    """
+    Form for managing SubCategory entities.
+    Supports preselection of a parent MasterCategory via `master_category_id`.
+    """
+
     class Meta:
         model = SubCategory
         fields = ['master_category', 'name']
@@ -128,7 +160,10 @@ class SubCategoryForm(CategoryFormMixin, forms.ModelForm):
             'name': 'Enter subcategory name (e.g., "Shirts", "Sneakers")',
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """
+        Optionally lock form to a specific MasterCategory.
+        """
         master_category_id = kwargs.pop('master_category_id', None)
         super().__init__(*args, **kwargs)
 
@@ -139,6 +174,11 @@ class SubCategoryForm(CategoryFormMixin, forms.ModelForm):
 
 
 class ArticleTypeForm(CategoryFormMixin, forms.ModelForm):
+    """
+    Form for managing ArticleType entities.
+    Supports preselection of a SubCategory via `sub_category_id`.
+    """
+
     class Meta:
         model = ArticleType
         fields = ['sub_category', 'name']
@@ -151,7 +191,10 @@ class ArticleTypeForm(CategoryFormMixin, forms.ModelForm):
             'name': 'Enter article type name (e.g., "Casual Shirts", "Running Shoes")',
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """
+        Optionally lock form to a specific SubCategory.
+        """
         sub_category_id = kwargs.pop('sub_category_id', None)
         super().__init__(*args, **kwargs)
 

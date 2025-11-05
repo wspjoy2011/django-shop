@@ -1,28 +1,76 @@
 from decimal import Decimal
+from typing import Any, Optional, Self, Callable
 
-from django.db.models import DecimalField, Case, When, FloatField, Value, Subquery, Avg, OuterRef, Q, F
+from django.db.models import DecimalField, Case, When, FloatField, Value, Q, F, QuerySet
 from django.db.models.functions import Cast
+from django.http import HttpRequest
+
+from apps.catalog.models import Product
 
 
 class ProductQuerysetBuilder:
+    """
+    Provides a configurable builder for constructing complex product querysets
+    based on request parameters such as category, gender, season, price range,
+    availability, discount, and ordering options.
+    """
 
-    def __init__(self, *args, **kwargs):
+    request: HttpRequest
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Initialize the builder with optional queryset and request."""
         super().__init__(*args, **kwargs)
-        self.queryset = None
-        self.request = None
-        self._ordering_annotations = {}
+        self.queryset: Optional[QuerySet[Product]] = None
+        self.request: Optional[HttpRequest] = None # type: ignore[assignment]
+        self._ordering_annotations: dict[str, bool] = {}
 
-    def set_queryset_and_request(self, queryset, request):
+    def set_queryset_and_request(
+            self,
+            queryset: QuerySet[Product],
+            request: HttpRequest,
+    ) -> Self:
+        """
+        Assign the initial queryset and request to the builder.
+
+        Args:
+            queryset (QuerySet[Product]): The base queryset to filter.
+            request (HttpRequest): The current HTTP request containing filter parameters.
+
+        Returns:
+            Self: The current instance of the builder.
+        """
         self.queryset = queryset
         self.request = request
         return self
 
-    def filter_by_category(self, category_filter_method=None, *args, **kwargs):
+    def filter_by_category(
+            self,
+            category_filter_method: Optional[
+                Callable[[QuerySet[Product]], QuerySet[Product]]
+            ] = None,
+            *args: Any,
+            **kwargs: Any,
+    ) -> Self:
+        """
+        Apply a category filter method to the queryset if provided.
+
+        Args:
+            category_filter_method (Callable | None): A callable that applies category filters.
+            *args: Additional positional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            Self: The current instance of the builder.
+        """
         if category_filter_method and self.queryset is not None:
             self.queryset = category_filter_method(self.queryset, *args, **kwargs)
         return self
 
-    def filter_by_gender(self):
+    def filter_by_gender(self) -> Self:
+        """Filter products by gender based on the 'gender' query parameter."""
+        assert self.request is not None
+        assert self.queryset is not None
+
         gender_param = self.request.GET.get("gender")
         if gender_param:
             genders = [g.strip() for g in gender_param.split(",") if g.strip()]
@@ -30,7 +78,11 @@ class ProductQuerysetBuilder:
                 self.queryset = self.queryset.filter(gender__in=genders)
         return self
 
-    def filter_by_season(self):
+    def filter_by_season(self) -> Self:
+        """Filter products by season slug from the 'season' query parameter."""
+        assert self.request is not None
+        assert self.queryset is not None
+
         season_param = self.request.GET.get("season")
         if season_param:
             season_slugs = [s.strip() for s in season_param.split(",") if s.strip()]
@@ -38,7 +90,11 @@ class ProductQuerysetBuilder:
                 self.queryset = self.queryset.filter(season__slug__in=season_slugs)
         return self
 
-    def filter_by_price_range(self):
+    def filter_by_price_range(self) -> Self:
+        """Filter products by minimum and maximum price parameters."""
+        assert self.request is not None
+        assert self.queryset is not None
+
         min_price_param = self.request.GET.get("min_price")
         max_price_param = self.request.GET.get("max_price")
 
@@ -65,7 +121,11 @@ class ProductQuerysetBuilder:
                 ).distinct()
         return self
 
-    def filter_by_availability(self):
+    def filter_by_availability(self) -> Self:
+        """Filter products by stock availability based on 'availability' query parameter."""
+        assert self.request is not None
+        assert self.queryset is not None
+
         availability_param = self.request.GET.get("availability")
 
         if availability_param:
@@ -98,7 +158,11 @@ class ProductQuerysetBuilder:
                         ).distinct()
         return self
 
-    def filter_by_discount(self):
+    def filter_by_discount(self) -> Self:
+        """Filter products by discount status ('on_sale' or 'no_discount')."""
+        assert self.request is not None
+        assert self.queryset is not None
+
         discount_param = self.request.GET.get("discount")
 
         if discount_param:
@@ -126,7 +190,10 @@ class ProductQuerysetBuilder:
                         ).distinct()
         return self
 
-    def add_rating_annotation(self):
+    def add_rating_annotation(self) -> Self:
+        """Annotate the queryset with the average product rating value."""
+        assert self.queryset is not None
+
         if 'avg_rating' not in self._ordering_annotations:
             self.queryset = self.queryset.annotate(
                 avg_rating=Case(
@@ -138,7 +205,10 @@ class ProductQuerysetBuilder:
             self._ordering_annotations['avg_rating'] = True
         return self
 
-    def add_price_annotation(self):
+    def add_price_annotation(self) -> Self:
+        """Annotate the queryset with an effective price field (sale or base price)."""
+        assert self.queryset is not None
+
         if 'effective_price' not in self._ordering_annotations:
             self.queryset = self.queryset.annotate(
                 effective_price=Case(
@@ -150,8 +220,12 @@ class ProductQuerysetBuilder:
             self._ordering_annotations['effective_price'] = True
         return self
 
-    def apply_ordering(self):
-        ordering = self.request.GET.get("ordering")
+    def apply_ordering(self) -> Self:
+        """Apply ordering to the queryset based on the 'ordering' query parameter."""
+        assert self.request is not None
+        assert self.queryset is not None
+
+        ordering = str(self.request.GET.get("ordering"))
         ordering_map = {
             "name_asc": ("product_display_name", "pk"),
             "name_desc": ("-product_display_name", "-pk"),
@@ -176,11 +250,23 @@ class ProductQuerysetBuilder:
 
         return self
 
-    def build(self):
+    def build(self) -> QuerySet[Product]:
+        """Return the final constructed queryset."""
+        assert self.queryset is not None
+
         return self.queryset
 
     @staticmethod
-    def _parse_decimal(value):
+    def _parse_decimal(value: Any) -> Optional[Decimal]:
+        """
+        Safely parse a decimal value from any input.
+
+        Args:
+            value (Any): The value to parse.
+
+        Returns:
+            Optional[Decimal]: Parsed Decimal or None if parsing fails.
+        """
         if value is None:
             return None
         try:

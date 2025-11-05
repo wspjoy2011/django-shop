@@ -1,5 +1,9 @@
+"""Management command to seed catalog data from CSV files into the database."""
+
 import time
+from argparse import ArgumentParser
 from pathlib import Path
+from typing import Any
 
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
@@ -22,9 +26,16 @@ from apps.catalog.models import (
 
 
 class Command(BaseCommand):
+    """Seed catalog data from CSV datasets into the PostgreSQL database."""
+
     help = "Seed catalog data from CSV files into the database."
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: ArgumentParser) -> None:
+        """Add CLI arguments for specifying CSV paths and optimization behavior.
+
+        Args:
+            parser (ArgumentParser): The arguments parser to extend.
+        """
         parser.add_argument(
             "--products",
             dest="products_csv",
@@ -54,7 +65,20 @@ class Command(BaseCommand):
             help="Do not drop indexes or apply PostgreSQL optimizations.",
         )
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
+        """Execute the seeding process.
+
+        This includes:
+        - Validating and resolving CSV file paths.
+        - Extracting and transforming CSV data.
+        - Optionally optimizing PostgreSQL for bulk inserts.
+        - Bulk loading the transformed data into the database.
+        - Restoring indexes and optimizations afterward.
+
+        Args:
+            *args: Positional arguments passed by Django.
+            **options: Parsed CLI options from the management command.
+        """
         products_csv = options["products_csv"]
         images_csv = options["images_csv"]
         batch_size = options["batch_size"]
@@ -82,7 +106,7 @@ class Command(BaseCommand):
         extract_time = time.perf_counter() - extract_start
         self.stdout.write(self.style.SUCCESS(f"Extract+Transform done in {extract_time:.3f}s"))
 
-        stored_indexes = {}
+        stored_indexes: dict[str, list[dict]] = {}
         table_names = [
             Product._meta.db_table,
             ArticleType._meta.db_table,

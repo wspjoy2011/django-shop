@@ -50,7 +50,7 @@ class Currency(models.Model):
     def __str__(self):
         return f"{self.code} - {self.name}"
 
-    def format_amount(self, amount):
+    def format_amount(self, amount) -> str:
         """Format amount with proper decimal places and symbol"""
         if self.decimals == 0:
             formatted = f"{amount:.0f}"
@@ -192,7 +192,7 @@ class ProductInventory(models.Model):
             return self.currency.format_amount(self.sale_price)
         return None
 
-    def format_current_price(self):
+    def format_current_price(self) -> str:
         """Format current effective price with currency"""
         return self.currency.format_amount(self.current_price)
 

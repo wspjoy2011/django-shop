@@ -1,3 +1,7 @@
+"""Management command to update PostgreSQL statistics (ANALYZE) for all project tables."""
+
+from typing import Any
+
 from django.core.management.base import BaseCommand
 from django.apps import apps
 from django.db import ProgrammingError, DatabaseError
@@ -6,6 +10,8 @@ from fixtures.utils import analyze_table
 
 
 class Command(BaseCommand):
+    """Run ANALYZE on all tables of specified Django apps to refresh PostgreSQL statistics."""
+
     help = "Updates PostgreSQL statistics for all tables in specified project apps."
 
     APP_LABELS_TO_ANALYZE = [
@@ -17,7 +23,17 @@ class Command(BaseCommand):
         'ratings',
     ]
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
+        """Execute the ANALYZE process across configured apps.
+
+        The command iterates over each listed app, inspects its models,
+        and performs PostgreSQL `ANALYZE` on every related database table
+        using the `analyze_table()` utility.
+
+        Args:
+            *args: Positional arguments passed by Django's command runner.
+            **options: Command-line options (not used).
+        """
         self.stdout.write(
             self.style.NOTICE("Starting PostgreSQL ANALYZE for project tables...")
         )

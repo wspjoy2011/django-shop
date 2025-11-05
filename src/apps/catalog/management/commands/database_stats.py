@@ -1,16 +1,33 @@
+"""Management command to display database statistics across Django models."""
+
+from argparse import ArgumentParser
+from typing import Any, Callable, cast
+
 from django.core.management.base import BaseCommand
 from django.apps import apps
 from django.contrib.auth import get_user_model
 from django.utils.termcolors import make_style
 from django.db.utils import DatabaseError
 
+from apps.catalog.protocols import ModelClassWithManager
+
 User = get_user_model()
+
+StyleCallback = Callable[[str], str]
+ModelRow = dict[str, Any]
 
 
 class Command(BaseCommand):
+    """Display database statistics for all non-system apps and models."""
+
     help = 'Display database statistics for all models'
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: ArgumentParser) -> None:
+        """Add CLI arguments.
+
+        Args:
+            parser (ArgumentParser): Parser to register command options on.
+        """
         parser.add_argument(
             '--app',
             type=str,
@@ -23,7 +40,13 @@ class Command(BaseCommand):
             help='Output format',
         )
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: dict[str, Any]) -> None:
+        """Execute the command.
+
+        Args:
+            *args: Positional arguments from Django runner.
+            **options: Parsed options; supports 'app' and 'format'.
+        """
         app_filter = options.get('app')
         output_format = options.get('format')
 
@@ -36,8 +59,9 @@ class Command(BaseCommand):
         total_count = 0
 
         for model in apps.get_models():
-            app_label = model._meta.app_label
-            model_name = model._meta.model_name
+            model_cls: ModelClassWithManager[Any] = cast(ModelClassWithManager[Any], model)
+            app_label = model_cls._meta.app_label
+            model_name = model_cls._meta.model_name
 
             if app_filter and app_label != app_filter:
                 continue
@@ -46,10 +70,10 @@ class Command(BaseCommand):
                 continue
 
             try:
-                count = model.objects.count()
+                count = model_cls.objects.count()
                 models_data.append({
                     'app': app_label,
-                    'model': model_name.title(),
+                    'model': str(model_name).title(),
                     'model_class': model.__name__,
                     'count': count
                 })
@@ -70,8 +94,25 @@ class Command(BaseCommand):
         else:
             self._display_simple(models_data, total_count, model_style, count_style, total_style)
 
-    def _display_table(self, models_data, total_count, header_style, model_style, count_style, total_style):
+    def _display_table(
+            self,
+            models_data: list[ModelRow],
+            total_count: int,
+            header_style: StyleCallback,
+            model_style: StyleCallback,
+            count_style: StyleCallback,
+            total_style: StyleCallback,
+    ) -> None:
+        """Render statistics in a formatted table layout.
 
+        Args:
+            models_data (list[dict]): Rows with 'app', 'model', 'model_class', 'count'.
+            total_count (int): Aggregate count across all rows.
+            header_style (Callable[[str], str]): Style for headers.
+            model_style (Callable[[str], str]): Style for model names.
+            count_style (Callable[[str], str]): Style for numbers.
+            total_style (Callable[[str], str]): Style for total line.
+        """
         self.stdout.write(header_style('\n' + '=' * 80))
         self.stdout.write(header_style('DATABASE STATISTICS'.center(80)))
         self.stdout.write(header_style('=' * 80))
@@ -104,8 +145,23 @@ class Command(BaseCommand):
         )
         self.stdout.write(header_style('=' * 80 + '\n'))
 
-    def _display_simple(self, models_data, total_count, model_style, count_style, total_style):
+    def _display_simple(
+        self,
+        models_data: list[ModelRow],
+        total_count: int,
+        model_style: StyleCallback,
+        count_style: StyleCallback,
+        total_style: StyleCallback,
+    ) -> None:
+        """Render statistics in a simple, line-by-line layout.
 
+        Args:
+            models_data (list[dict]): Rows with 'app', 'model_class', 'count'.
+            total_count (int): Aggregate count across all rows.
+            model_style (Callable[[str], str]): Style for model names.
+            count_style (Callable[[str], str]): Style for numbers.
+            total_style (Callable[[str], str]): Style for total line.
+        """
         self.stdout.write('\nDatabase Statistics:')
         self.stdout.write('-' * 40)
 

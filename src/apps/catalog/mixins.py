@@ -1,10 +1,10 @@
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
+from typing import Generic, Any, Optional, Sequence
 
 from django import forms
 from django.contrib import messages
-from django.db import models
-from django.db.models import Prefetch, F, Exists, OuterRef
-from django.http import HttpRequest
+from django.db.models import Prefetch, F, Exists, OuterRef, QuerySet
+from django.http import HttpRequest, HttpResponse, HttpResponseBase
 from django.shortcuts import redirect
 from django.utils.http import urlencode
 from django.views import View
@@ -12,14 +12,33 @@ from django.views import View
 from apps.cart.models import CartItem
 from apps.catalog.models import Season
 from apps.catalog.pgviews import PriceRangesMV, GenderFilterOptionsMV
+from apps.catalog.protocols import ModelT, ModelClassWithManager
 from apps.favorites.models import FavoriteItem
 from apps.ratings.models import Rating, Like, Dislike
 
 
 class ProductAccessMixin(View):
+    """
+    Restricts access to product modification views for non-staff users.
+
+    Displays an error message and redirects to the catalog home page
+    if the user is not authenticated or not a staff member.
+    """
+
     error_message = "You do not have permission to add/edit/delete products."
 
-    def dispatch(self, request, *args, **kwargs):
+    def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponseBase:
+        """
+        Intercept incoming requests and enforce staff-only access.
+
+        Args:
+            request: Current HTTP request.
+            *args: Positional view arguments.
+            **kwargs: Keyword view arguments.
+
+        Returns:
+            HttpResponse: Redirects unauthorized users to catalog home.
+        """
         if not request.user.is_authenticated or not request.user.is_staff:
             messages.error(request, self.error_message)
             return redirect("catalog:home")
@@ -27,17 +46,35 @@ class ProductAccessMixin(View):
 
 
 class CategoryAccessMixin(ProductAccessMixin):
+    """
+    Restricts access to category modification views for non-staff users.
+    Inherits permission enforcement from ProductAccessMixin.
+    """
+
     error_message = "You do not have permission to add/edit/delete categories."
 
 
-class ProductQuerysetMixin:
-    request: HttpRequest
-    model: models.Model
+class ProductQuerysetMixin(Generic[ModelT]):
+    """
+    Provides optimized base querysets for product views.
 
-    def get_base_queryset(self):
+    Adds prefetches for likes, dislikes, favorites, cart items, and
+    optionally user-specific ratings when authenticated.
+    """
+
+    request: HttpRequest
+    model: ModelClassWithManager[ModelT]
+
+    def get_base_queryset(self) -> QuerySet[ModelT]:
+        """
+        Build a queryset with all required prefetch and select-related fields.
+
+        Returns:
+            QuerySet[ModelT]: Optimized queryset containing related data.
+        """
         user = self.request.user
 
-        prefetch_list = [
+        prefetch_list: list[Prefetch] = [
             Prefetch(
                 'likes',
                 queryset=Like.objects.only('product_id', 'user_id'),
@@ -110,21 +147,48 @@ class ProductQuerysetMixin:
 
         return queryset
 
-    def use_projection(self, only_fields=None):
+    def use_projection(self, only_fields: Optional[Sequence[str]] = None) -> QuerySet[ModelT]:
+        """
+        Create a lightweight queryset limited to selected fields.
+
+        Args:
+            only_fields: Optional list of field names to project.
+
+        Returns:
+            QuerySet[ModelT]: Projected queryset containing only given fields.
+        """
         if not only_fields:
             meta = self.model._meta
-            ordering = list(meta.ordering)
-            only_fields = [f.lstrip('-') for f in ordering]
+            ordering_fields: Sequence[str] = meta.ordering or ()
+            only_fields = [f.lstrip('-') for f in ordering_fields]
 
-        return self.model.objects.only(*only_fields)
+        queryset: QuerySet[ModelT] = self.model.objects.only(*only_fields)
+
+        return queryset
 
 
 class ProductFilterContextMixin:
+    """
+    Provides reusable filter-context logic for product list views.
+
+    Builds UI filter state and available options (gender, season,
+    availability, discount, and price range) based on the current queryset.
+    """
+
     request: HttpRequest
     kwargs: dict
 
-    def get_filter_context_data(self, queryset):
-        context = {}
+    def get_filter_context_data(self, queryset: QuerySet[Any]) -> dict[str, Any]:
+        """
+        Build context for filter controls and their current state.
+
+        Args:
+            queryset: Base queryset used to derive filter options.
+
+        Returns:
+            dict[str, Any]: Context with current selections and options.
+        """
+        context: dict[str, Any] = {}
 
         context["current_order"] = self.request.GET.get("ordering", "")
 
@@ -148,11 +212,18 @@ class ProductFilterContextMixin:
 
         return context
 
-    def _parse_csv_param(self, param_name):
+    def _parse_csv_param(self, param_name: str) -> list[str]:
+        """Split a comma-separated query parameter into a list of clean values."""
         param_value = self.request.GET.get(param_name, "")
         return [item.strip() for item in param_value.split(",") if item.strip()]
 
-    def _get_price_range_context(self):
+    def _get_price_range_context(self) -> dict[str, float]:
+        """
+        Compute available and current price range values for filter UI.
+
+        Returns:
+            dict[str, float]: A mapping with min/max and current_min/current_max values.
+        """
         master_slug = self.kwargs.get("master_slug")
         sub_slug = self.kwargs.get("sub_slug")
         article_slug = self.kwargs.get("article_slug")
@@ -160,19 +231,23 @@ class ProductFilterContextMixin:
         min_price, max_price = PriceRangesMV.get_for_context(
             master_slug=master_slug,
             sub_slug=sub_slug,
-            article_slug=article_slug
+            article_slug=article_slug,
         )
 
-        min_price = min_price or Decimal('0.00')
-        max_price = max_price or Decimal('1000.00')
+        min_price = min_price or Decimal("0.00")
+        max_price = max_price or Decimal("1000.00")
 
-        current_min_price = self.request.GET.get("min_price", str(min_price))
-        current_max_price = self.request.GET.get("max_price", str(max_price))
+        min_price_param = self.request.GET.get("min_price")
+        max_price_param = self.request.GET.get("max_price")
 
         try:
-            current_min_price = Decimal(str(current_min_price))
-            current_max_price = Decimal(str(current_max_price))
-        except (ValueError, TypeError):
+            current_min_price: Decimal = (
+                Decimal(str(min_price_param)) if min_price_param is not None else min_price
+            )
+            current_max_price: Decimal = (
+                Decimal(str(max_price_param)) if max_price_param is not None else max_price
+            )
+        except (InvalidOperation, ValueError, TypeError):
             current_min_price = min_price
             current_max_price = max_price
 
@@ -180,10 +255,11 @@ class ProductFilterContextMixin:
             "min": float(min_price),
             "max": float(max_price),
             "current_min": float(current_min_price),
-            "current_max": float(current_max_price)
+            "current_max": float(current_max_price),
         }
 
-    def _get_gender_options(self):
+    def _get_gender_options(self) -> list[str]:
+        """Fetch available gender filter options based on slugs in context."""
         master_slug = self.kwargs.get("master_slug")
         sub_slug = self.kwargs.get("sub_slug")
         article_slug = self.kwargs.get("article_slug")
@@ -195,7 +271,8 @@ class ProductFilterContextMixin:
         )
 
     @staticmethod
-    def _get_season_options(queryset):
+    def _get_season_options(queryset: QuerySet) -> list[tuple[str, str]]:
+        """Return seasons present in the given queryset."""
         seasons = (
             Season.objects
             .annotate(present=Exists(queryset.filter(season_id=OuterRef('pk'))))
@@ -206,7 +283,8 @@ class ProductFilterContextMixin:
         return list(seasons)
 
     @staticmethod
-    def _get_availability_options(queryset):
+    def _get_availability_options(queryset: QuerySet) -> list[tuple[str, str]]:
+        """Determine which availability states exist within the queryset."""
         options = []
 
         if queryset.filter(
@@ -227,7 +305,8 @@ class ProductFilterContextMixin:
         return options
 
     @staticmethod
-    def _get_discount_options(queryset):
+    def _get_discount_options(queryset: QuerySet) -> list[tuple[str, str]]:
+        """Determine discount filter states based on sale/base price conditions."""
         options = []
 
         if queryset.filter(
@@ -241,7 +320,8 @@ class ProductFilterContextMixin:
 
         return options
 
-    def _get_filter_query_string(self):
+    def _get_filter_query_string(self) -> str:
+        """Rebuild query string excluding pagination parameters."""
         params = self.request.GET.copy()
         params.pop("page", None)
         filter_query_string = urlencode(params, doseq=True)
@@ -249,25 +329,36 @@ class ProductFilterContextMixin:
 
 
 class CategoryFormMixin:
+    """
+    Common styling and constraints for all category forms.
+
+    Adds Bootstrap classes, sets max length on name fields,
+    and extends help text consistently.
+    """
+
     fields: dict
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Initialize the mixin and apply form-wide field adjustments."""
         super().__init__(*args, **kwargs)
         self.set_field_styles()
         self.set_name_field_maxlength()
         self.update_name_help_text()
 
-    def set_field_styles(self):
+    def set_field_styles(self) -> None:
+        """Apply consistent form-control or select CSS classes to widgets."""
         for name, field in self.fields.items():
             css_class = "form-select" if isinstance(field.widget, forms.Select) else "form-control"
             field.widget.attrs.setdefault("class", css_class)
             field.widget.attrs.setdefault("placeholder", field.label)
 
-    def set_name_field_maxlength(self):
+    def set_name_field_maxlength(self) -> None:
+        """Set maximum input length for 'name' fields if present."""
         if 'name' in self.fields:
             self.fields['name'].widget.attrs.setdefault('maxlength', 50)
 
-    def update_name_help_text(self):
+    def update_name_help_text(self) -> None:
+        """Append standard max-length information to the 'name' help text."""
         if 'name' in self.fields:
             current_help_text = self.fields['name'].help_text or ''
             self.fields['name'].help_text = f"{current_help_text} Maximum 50 characters."

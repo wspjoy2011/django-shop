@@ -16,7 +16,7 @@ from datetime import timedelta
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # Project data paths
 
@@ -44,7 +44,7 @@ SECRET_KEY = 'django-insecure-ox)m@cfm+411e!drko=sa@el5+t1!#r!411pr#xm(f8&bxn1op
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS: list[str] = []
 
 # Django Debug Toolbar configuration for Docker
 

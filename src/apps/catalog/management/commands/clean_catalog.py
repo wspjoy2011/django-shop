@@ -1,4 +1,8 @@
+"""Management command to clear catalog data with optional DB optimization."""
+
 import time
+from argparse import ArgumentParser
+from typing import Any
 
 from django.core.management.base import BaseCommand
 from etl.cleaner import DjangoCatalogCleaner
@@ -18,9 +22,19 @@ from apps.catalog.models import (
 
 
 class Command(BaseCommand):
-    help = "Clear catalog data (deletes Products, ArticleTypes, SubCategories, MasterCategories, BaseColours, Seasons, UsageTypes)."
+    """Clear catalog data and optionally optimize PostgreSQL around bulk deletion."""
 
-    def add_arguments(self, parser):
+    help = (
+        "Clear catalog data (deletes Products, ArticleTypes, SubCategories, "
+        "MasterCategories, BaseColours, Seasons, UsageTypes)."
+    )
+
+    def add_arguments(self, parser: ArgumentParser) -> None:
+        """Add CLI arguments for the command.
+
+        Args:
+            parser (ArgumentParser): The arguments parser to extend.
+        """
         parser.add_argument(
             "--yes",
             action="store_true",
@@ -35,7 +49,13 @@ class Command(BaseCommand):
             help="Do not drop indexes or apply PostgreSQL optimizations.",
         )
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
+        """Execute the command.
+
+        Args:
+            *args: Positional arguments passed by the management command runner.
+            **options: Parsed options including 'yes' and 'skip_optimization'.
+        """
         confirmed = options["yes"]
         if not confirmed:
             answer = input(
@@ -46,7 +66,7 @@ class Command(BaseCommand):
                 return
 
         skip_optimization = options["skip_optimization"]
-        stored_indexes = {}
+        stored_indexes: dict[str, list[dict]] = {}
         table_names = [
             Product._meta.db_table,
             ArticleType._meta.db_table,

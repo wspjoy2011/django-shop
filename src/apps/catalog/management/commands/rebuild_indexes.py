@@ -1,21 +1,38 @@
+"""Management command to rebuild model-defined indexes if they don't exist."""
+
 import time
+from typing import Any
 
 from django.core.management.base import BaseCommand
 from django.db import connection, DatabaseError
 from django.apps import apps
+from django.db.backends.utils import CursorWrapper
+from django.db.models import Model
 from tqdm import tqdm
 
 
 class Command(BaseCommand):
+    """Rebuild indexes declared in models' Meta.indexes if they are missing."""
+
     help = "Rebuilds all indexes defined in models' Meta classes, creating only those that do not already exist."
 
-    def _get_existing_indexes(self, cursor) -> set:
+    def _get_existing_indexes(self, cursor: CursorWrapper) -> set[str]:
+        """Return a set of existing index names in the public schema.
+
+        Args:
+            cursor (Any): Database cursor.
+
+        Returns:
+            set[str]: Existing index names.
+        """
         cursor.execute("SELECT indexname FROM pg_indexes WHERE schemaname = 'public';")
         return {row[0] for row in cursor.fetchall()}
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
+        """Execute command: scan apps, compute missing indexes, create them."""
         app_labels_to_scan = ['catalog', 'ratings', 'favorites', 'inventories', 'accounts']
-        all_models = []
+        all_models: list[type[Model]] = []
+
         for label in app_labels_to_scan:
             try:
                 all_models.extend(apps.get_app_config(label).get_models())
